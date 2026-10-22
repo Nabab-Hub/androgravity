@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes">
+  <title>PocketAgent Monaco Editor</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #1e1e1e;
+      color: #d4d4d4;
+    }
+    #editor-container {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+    #gutter {
+      width: 48px;
+      background-color: #1e1e1e;
+      color: #858585;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 13px;
+      line-height: 20px;
+      padding: 10px 6px;
+      text-align: right;
+      user-select: none;
+      border-right: 1px solid #2d2d2d;
+      overflow: hidden;
+      white-space: pre;
+    }
+    #code-area {
+      flex: 1;
+      height: 100%;
+      background: transparent;
+      color: #e0e0e0;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 13px;
+      line-height: 20px;
+      padding: 10px;
+      border: none;
+      outline: none;
+      resize: none;
+      white-space: pre;
+      overflow: auto;
+      tab-size: 4;
+    }
+    /* Diff View Styling */
+    #diff-container {
+      display: none;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      padding: 10px;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 13px;
+      line-height: 20px;
+    }
+    .diff-line {
+      display: flex;
+      width: 100%;
+    }
+    .diff-num {
+      width: 40px;
+      color: #858585;
+      user-select: none;
+      text-align: right;
+      padding-right: 8px;
+    }
+    .diff-text {
+      flex: 1;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .diff-add {
+      background-color: rgba(46, 160, 67, 0.2);
+      color: #7ee787;
+    }
+    .diff-del {
+      background-color: rgba(248, 81, 73, 0.2);
+      color: #ffa198;
+    }
+    .diff-unchanged {
+      color: #c9d1d9;
+    }
+    /* Light Theme */
+    body.light {
+      background-color: #ffffff;
+      color: #24292f;
+    }
+    body.light #gutter {
+      background-color: #f6f8fa;
+      color: #57606a;
+      border-right: 1px solid #d0d7de;
+    }
+    body.light #code-area {
+      color: #24292f;
+    }
+  </style>
+</head>
+<body class="dark">
+  <div id="editor-container">
+    <div id="gutter">1</div>
+    <textarea id="code-area" spellcheck="false" placeholder="Write or edit code..."></textarea>
+  </div>
+
+  <div id="diff-container"></div>
+
+  <script>
+    const codeArea = document.getElementById('code-area');
+    const gutter = document.getElementById('gutter');
+    const editorContainer = document.getElementById('editor-container');
+    const diffContainer = document.getElementById('diff-container');
+
+    let currentLanguage = 'text';
+
+    function updateLineNumbers() {
+      const lines = codeArea.value.split('\n').length;
+      let numbers = '';
+      for (let i = 1; i <= lines; i++) {
+        numbers += i + '\n';
+      }
+      gutter.innerText = numbers;
+    }
+
+    codeArea.addEventListener('input', () => {
+      updateLineNumbers();
+      if (window.AndroidBridge && window.AndroidBridge.onContentChange) {
+        window.AndroidBridge.onContentChange(codeArea.value);
+      }
+    });
+
+    codeArea.addEventListener('scroll', () => {
+      gutter.scrollTop = codeArea.scrollTop;
+    });
+
+    // Support Tab key indentation
+    codeArea.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = codeArea.selectionStart;
+        const end = codeArea.selectionEnd;
+        codeArea.value = codeArea.value.substring(0, start) + '    ' + codeArea.value.substring(end);
+        codeArea.selectionStart = codeArea.selectionEnd = start + 4;
+        updateLineNumbers();
+        if (window.AndroidBridge && window.AndroidBridge.onContentChange) {
+          window.AndroidBridge.onContentChange(codeArea.value);
+        }
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (window.AndroidBridge && window.AndroidBridge.onSave) {
+          window.AndroidBridge.onSave();
+        }
+      }
+    });
+
+    // Android Callable APIs
+    window.setContent = function(content, lang) {
+      codeArea.value = content || '';
+      currentLanguage = lang || 'text';
+      updateLineNumbers();
+    };
+
+    window.getContent = function() {
+      return codeArea.value;
+    };
+
+    window.setTheme = function(theme) {
+      if (theme === 'light') {
+        document.body.className = 'light';
+      } else {
+        document.body.className = 'dark';
+      }
+    };
+
+    window.setDiffMode = function(isDiff, original, modified, lang) {
+      if (isDiff) {
+        editorContainer.style.display = 'none';
+        diffContainer.style.display = 'block';
+        renderDiff(original || '', modified || '');
+      } else {
+        diffContainer.style.display = 'none';
+        editorContainer.style.display = 'flex';
+      }
+    };
+
+    function renderDiff(orig, mod) {
+      const origLines = orig.split('\n');
+      const modLines = mod.split('\n');
+      let html = '';
+      const maxLen = Math.max(origLines.length, modLines.length);
+
+      for (let i = 0; i < maxLen; i++) {
+        const oLine = origLines[i];
+        const mLine = modLines[i];
+
+        if (oLine === mLine) {
+          html += `<div class="diff-line diff-unchanged"><span class="diff-num">${i + 1}</span><span class="diff-text"> ${escapeHtml(oLine || '')}</span></div>`;
+        } else {
+          if (oLine !== undefined) {
+            html += `<div class="diff-line diff-del"><span class="diff-num">${i + 1}</span><span class="diff-text">-${escapeHtml(oLine)}</span></div>`;
+          }
+          if (mLine !== undefined) {
+            html += `<div class="diff-line diff-add"><span class="diff-num">${i + 1}</span><span class="diff-text">+${escapeHtml(mLine)}</span></div>`;
+          }
+        }
+      }
+      diffContainer.innerHTML = html;
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // Signal ready to Android container
+    window.addEventListener('DOMContentLoaded', () => {
+      updateLineNumbers();
+      if (window.AndroidBridge && window.AndroidBridge.onEditorReady) {
+        window.AndroidBridge.onEditorReady();
+      }
+    });
+  </script>
+</body>
+</html>
