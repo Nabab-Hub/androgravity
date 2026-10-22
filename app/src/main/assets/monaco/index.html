@@ -124,12 +124,12 @@
     let currentLanguage = 'text';
 
     function updateLineNumbers() {
-      const lines = codeArea.value.split('\n').length;
-      let numbers = '';
-      for (let i = 1; i <= lines; i++) {
-        numbers += i + '\n';
+      const lineCount = (codeArea.value.match(/\n/g) || []).length + 1;
+      const numbers = new Array(lineCount);
+      for (let i = 0; i < lineCount; i++) {
+        numbers[i] = i + 1;
       }
-      gutter.innerText = numbers;
+      gutter.textContent = numbers.join('\n');
     }
 
     codeArea.addEventListener('input', () => {
@@ -222,12 +222,17 @@
     }
 
     // Signal ready to Android container
-    window.addEventListener('DOMContentLoaded', () => {
+    function signalReady() {
       updateLineNumbers();
       if (window.AndroidBridge && window.AndroidBridge.onEditorReady) {
         window.AndroidBridge.onEditorReady();
       }
-    });
+    }
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      signalReady();
+    } else {
+      window.addEventListener('DOMContentLoaded', signalReady);
+    }
   </script>
 </body>
 </html>

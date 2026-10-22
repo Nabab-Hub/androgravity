@@ -513,7 +513,6 @@ fun MonacoWebViewContainer(
     onSave: () -> Unit,
     onWebViewCreated: (WebView) -> Unit
 ) {
-    val context = LocalContext.current
     val bridge = remember {
         MonacoBridge(
             onReady = onEditorReady,
@@ -524,28 +523,17 @@ fun MonacoWebViewContainer(
 
     AndroidView(
         factory = { ctx ->
-            WebView(ctx).apply {
-                settings.javaScriptEnabled = true
-                settings.domStorageEnabled = true
-                settings.allowFileAccess = false
-                settings.allowContentAccess = false
-
-                val assetLoader = WebViewAssetLoader.Builder()
-                    .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(ctx))
-                    .build()
-
-                webViewClient = object : WebViewClient() {
-                    override fun shouldInterceptRequest(
-                        view: WebView,
-                        request: WebResourceRequest
-                    ): WebResourceResponse? {
-                        return assetLoader.shouldInterceptRequest(request.url)
-                    }
+            dev.pocketagent.ui.editor.EditorWebViewHolder.acquire(ctx, bridge).also { wv ->
+                onWebViewCreated(wv)
+                if (dev.pocketagent.ui.editor.EditorWebViewHolder.isReady) {
+                    onEditorReady()
                 }
-
-                addJavascriptInterface(bridge, "AndroidBridge")
-                loadUrl("https://appassets.androidplatform.net/assets/monaco/index.html")
-                onWebViewCreated(this)
+            }
+        },
+        update = { wv ->
+            onWebViewCreated(wv)
+            if (dev.pocketagent.ui.editor.EditorWebViewHolder.isReady) {
+                onEditorReady()
             }
         },
         modifier = Modifier.fillMaxSize()

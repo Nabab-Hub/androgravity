@@ -12,6 +12,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         try {
             enableEdgeToEdge()
+            // Pre-warm Monaco editor in background so opening editor tab is instantaneous
+            dev.pocketagent.ui.editor.EditorWebViewHolder.prewarm(this)
             setContent {
                 PocketAgentTheme {
                     AppNavHost()
