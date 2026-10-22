@@ -61,8 +61,8 @@ class GeminiProvider(
             return@flow
         }
 
-        val modelName = request.model.ifBlank { DEFAULT_MODEL }
-        val url = "https://generativelanguage.googleapis.com/v1beta/models/$modelName:streamGenerateContent?alt=sse&key=$apiKey"
+        val effectiveModel = resolveGeminiModel(request.model)
+        val url = "https://generativelanguage.googleapis.com/v1beta/models/$effectiveModel:streamGenerateContent?alt=sse&key=$apiKey"
 
         val requestBody = buildGeminiRequestBody(request)
 
@@ -70,12 +70,16 @@ class GeminiProvider(
             val response = client.post(url) {
                 contentType(ContentType.Application.Json)
                 header(HttpHeaders.Accept, "text/event-stream")
+                header("x-goog-api-key", apiKey)
                 setBody(requestBody.toString())
             }
 
             if (response.status.value !in 200..299) {
                 val errorBody: String = response.body()
-                emit(ChatEvent.Error("Gemini API returned status ${response.status.value}: $errorBody"))
+                val hint = if (response.status.value == 403) {
+                    "\n\nHint: Ensure your API key is generated from Google AI Studio (aistudio.google.com). Or switch to ChatGPT / gpt-4o-mini in Settings."
+                } else ""
+                emit(ChatEvent.Error("Gemini API returned status ${response.status.value}: $errorBody$hint"))
                 return@flow
             }
 
@@ -240,6 +244,17 @@ class GeminiProvider(
     }
 
     companion object {
-        const val DEFAULT_MODEL = "gemini-2.5-flash"
+        const val DEFAULT_MODEL = "gemini-1.5-flash"
+
+        fun resolveGeminiModel(model: String): String {
+            val clean = model.lowercase().trim()
+            return when {
+                clean.contains("3.7") || clean.contains("3.8") || clean.contains("2.5") || clean.contains("2.0") -> "gemini-2.0-flash"
+                clean.contains("1.5-pro") || clean.contains("pro") -> "gemini-1.5-pro"
+                clean.contains("1.5-flash") || clean.contains("flash") -> "gemini-1.5-flash"
+                clean.isNotBlank() -> clean
+                else -> DEFAULT_MODEL
+            }
+        }
     }
 }

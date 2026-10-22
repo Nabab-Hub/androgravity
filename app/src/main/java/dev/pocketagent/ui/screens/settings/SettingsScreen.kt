@@ -52,6 +52,7 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var passwordVisible by remember { mutableStateOf(false) }
+    var openaiPasswordVisible by remember { mutableStateOf(false) }
     var showBatteryGuide by remember { mutableStateOf(false) }
 
     if (showBatteryGuide) {
@@ -101,6 +102,7 @@ fun SettingsScreen(
                     value = uiState.geminiApiKey,
                     onValueChange = { viewModel.updateGeminiApiKey(it) },
                     label = { Text("Gemini API Key") },
+                    placeholder = { Text("AIzaSy...") },
                     leadingIcon = { Icon(Icons.Default.Key, contentDescription = null) },
                     trailingIcon = {
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
@@ -111,6 +113,27 @@ fun SettingsScreen(
                         }
                     },
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = uiState.openaiApiKey,
+                    onValueChange = { viewModel.updateOpenAiApiKey(it) },
+                    label = { Text("OpenAI (ChatGPT) API Key") },
+                    placeholder = { Text("sk-...") },
+                    leadingIcon = { Icon(Icons.Default.Key, contentDescription = null) },
+                    trailingIcon = {
+                        IconButton(onClick = { openaiPasswordVisible = !openaiPasswordVisible }) {
+                            Icon(
+                                imageVector = if (openaiPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                contentDescription = if (openaiPasswordVisible) "Hide key" else "Show key"
+                            )
+                        }
+                    },
+                    visualTransformation = if (openaiPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )

@@ -81,6 +81,10 @@ class SettingsViewModel(
         _uiState.update { it.copy(geminiApiKey = key, isSavedSuccess = false) }
     }
 
+    fun updateOpenAiApiKey(key: String) {
+        _uiState.update { it.copy(openaiApiKey = key, isSavedSuccess = false) }
+    }
+
     fun updateSelectedModel(model: String) {
         _uiState.update { it.copy(selectedModel = model, isSavedSuccess = false) }
     }

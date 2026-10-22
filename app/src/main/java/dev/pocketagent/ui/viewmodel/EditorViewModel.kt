@@ -7,6 +7,7 @@ import dev.pocketagent.core.model.FileNode
 import dev.pocketagent.core.model.Project
 import dev.pocketagent.core.model.SearchMatch
 import dev.pocketagent.core.storage.WorkspaceManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -46,7 +47,7 @@ class EditorViewModel(
     }
 
     fun loadProjects() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             val list = workspaceManager.listProjects()
             if (list.isEmpty()) {
                 val defaultProject = workspaceManager.createProject("hello_world")
@@ -115,11 +116,13 @@ class EditorViewModel(
 
     fun refreshTree(projectId: String? = _uiState.value.activeProject?.id) {
         if (projectId == null) return
-        try {
-            val tree = workspaceManager.getFileTree(projectId)
-            _uiState.update { it.copy(fileTree = tree) }
-        } catch (e: Exception) {
-            // Ignored if project was deleted
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val tree = workspaceManager.getFileTree(projectId)
+                _uiState.update { it.copy(fileTree = tree) }
+            } catch (e: Exception) {
+                // Ignored if project was deleted
+            }
         }
     }
 
@@ -137,24 +140,26 @@ class EditorViewModel(
 
     fun openFile(relativePath: String) {
         val projectId = _uiState.value.activeProject?.id ?: return
-        try {
-            val content = workspaceManager.readFile(projectId, relativePath)
-            val tabs = _uiState.value.openTabs.toMutableList()
-            if (!tabs.contains(relativePath)) {
-                tabs.add(relativePath)
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val content = workspaceManager.readFile(projectId, relativePath)
+                val tabs = _uiState.value.openTabs.toMutableList()
+                if (!tabs.contains(relativePath)) {
+                    tabs.add(relativePath)
+                }
+                _uiState.update {
+                    it.copy(
+                        openTabs = tabs,
+                        activeTab = relativePath,
+                        activeContent = content,
+                        diffOriginalContent = content,
+                        isDirty = false,
+                        isDiffMode = false
+                    )
+                }
+            } catch (e: Exception) {
+                // File might not exist yet
             }
-            _uiState.update {
-                it.copy(
-                    openTabs = tabs,
-                    activeTab = relativePath,
-                    activeContent = content,
-                    diffOriginalContent = content,
-                    isDirty = false,
-                    isDiffMode = false
-                )
-            }
-        } catch (e: Exception) {
-            // File might not exist yet
         }
     }
 

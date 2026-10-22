@@ -20,6 +20,12 @@ import kotlinx.serialization.json.Json
 
 class WorkspaceManager(private val context: Context) {
 
+    companion object {
+        private val IGNORED_DIR_NAMES = setOf(
+            "node_modules", ".git", ".gradle", "build", ".idea", ".dart_tool", "dist", ".cache", "venv", ".venv", "__pycache__"
+        )
+    }
+
     val workspacesRoot: File by lazy {
         File(context.filesDir, "workspaces").apply {
             if (!exists()) mkdirs()
@@ -171,15 +177,21 @@ class WorkspaceManager(private val context: Context) {
 
     fun getFileTree(projectId: String): FileNode {
         val root = getProjectDir(projectId)
-        return buildNode(root, root)
+        return buildNode(root, root, depth = 0)
     }
 
-    private fun buildNode(file: File, projectRoot: File): FileNode {
+    private fun buildNode(file: File, projectRoot: File, depth: Int = 0): FileNode {
         val relative = file.relativeTo(projectRoot).path.replace('\\', '/')
         if (file.isDirectory) {
-            val children = (file.listFiles() ?: emptyArray())
-                .sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() }))
-                .map { buildNode(it, projectRoot) }
+            val isIgnored = file != projectRoot && (file.name in IGNORED_DIR_NAMES || file.name.startsWith("."))
+            val children = if (isIgnored || depth >= 5) {
+                emptyList()
+            } else {
+                (file.listFiles() ?: emptyArray())
+                    .sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() }))
+                    .take(200)
+                    .map { buildNode(it, projectRoot, depth + 1) }
+            }
             return FileNode(
                 name = file.name,
                 relativePath = relative,

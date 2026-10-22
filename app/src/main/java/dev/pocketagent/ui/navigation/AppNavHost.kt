@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ime
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -68,9 +69,20 @@ fun PhoneNavigationLayout() {
                         }
                     )
                 },
+                navigationIcon = {
+                    if (currentRoute == NavDestination.Settings.route) {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    }
+                },
                 actions = {
                     if (currentRoute != NavDestination.Settings.route) {
-                        IconButton(onClick = { navController.navigate(NavDestination.Settings.route) }) {
+                        IconButton(onClick = {
+                            navController.navigate(NavDestination.Settings.route) {
+                                launchSingleTop = true
+                            }
+                        }) {
                             Icon(Icons.Default.Settings, contentDescription = "Settings")
                         }
                     }
@@ -87,12 +99,17 @@ fun PhoneNavigationLayout() {
                         NavigationBarItem(
                             selected = selected,
                             onClick = {
-                                navController.navigate(destination.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                                if (currentRoute == NavDestination.Settings.route) {
+                                    navController.popBackStack()
+                                }
+                                if (currentRoute != destination.route) {
+                                    navController.navigate(destination.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
                                 }
                             },
                             icon = { Icon(destination.icon, contentDescription = destination.title) },

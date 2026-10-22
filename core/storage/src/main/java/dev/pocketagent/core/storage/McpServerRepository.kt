@@ -12,7 +12,8 @@ import kotlinx.serialization.json.Json
 import java.io.File
 
 class McpServerRepository(
-    private val storageDir: File
+    private val storageDir: File,
+    private val loadDefaults: Boolean = true
 ) {
     private val json = Json {
         prettyPrint = true
@@ -30,7 +31,7 @@ class McpServerRepository(
     @Synchronized
     private fun loadServers() {
         if (!configFile.exists()) {
-            val defaults = getDefaultServers()
+            val defaults = if (loadDefaults) getDefaultServers() else emptyList()
             _servers.value = defaults
             persist()
             return
@@ -38,7 +39,7 @@ class McpServerRepository(
         try {
             val content = configFile.readText()
             val list = json.decodeFromString<List<McpServerConfig>>(content)
-            if (list.isEmpty()) {
+            if (list.isEmpty() && loadDefaults) {
                 val defaults = getDefaultServers()
                 _servers.value = defaults
                 persist()
@@ -46,7 +47,7 @@ class McpServerRepository(
                 _servers.value = list
             }
         } catch (_: Throwable) {
-            val defaults = getDefaultServers()
+            val defaults = if (loadDefaults) getDefaultServers() else emptyList()
             _servers.value = defaults
             persist()
         }

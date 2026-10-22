@@ -38,7 +38,7 @@ class McpIntegrationTest {
     fun setup() {
         workspace = tempFolder.newFolder("ws_mcp")
         storageDir = tempFolder.newFolder("storage_mcp")
-        repo = McpServerRepository(storageDir)
+        repo = McpServerRepository(storageDir, loadDefaults = false)
         toolRouter = ToolRouter()
         policyEngine = PolicyEngine(AutonomyMode.SEMI_AUTONOMY)
     }
@@ -66,7 +66,7 @@ class McpIntegrationTest {
         assertThat(repo.servers.value[0].tools).hasSize(1)
 
         // Re-read from disk to test persistence
-        val newRepo = McpServerRepository(storageDir)
+        val newRepo = McpServerRepository(storageDir, loadDefaults = false)
         assertThat(newRepo.servers.value).hasSize(1)
         assertThat(newRepo.servers.value[0].tools[0].name).isEqualTo("get_forecast")
 
