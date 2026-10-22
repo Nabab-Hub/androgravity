@@ -50,4 +50,16 @@ class StartupTest {
         )
         println("AgentLoop OK")
     }
+
+    @Test
+    fun testNavDestinationsNonNull() {
+        val items = dev.pocketagent.ui.navigation.NavDestination.bottomNavItems
+        org.junit.Assert.assertEquals(5, items.size)
+        for (item in items) {
+            org.junit.Assert.assertNotNull("NavDestination item should never be null", item)
+            org.junit.Assert.assertTrue(item.route.isNotBlank())
+            org.junit.Assert.assertTrue(item.title.isNotBlank())
+            println("NavDestination OK: ${item.title} -> route: ${item.route}")
+        }
+    }
 }

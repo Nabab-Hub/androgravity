@@ -76,7 +76,7 @@ fun PhoneNavigationLayout() {
         },
         bottomBar = {
             NavigationBar {
-                NavDestination.bottomNavItems.forEach { destination ->
+                NavDestination.bottomNavItems.filterNotNull().forEach { destination ->
                     val selected = currentRoute == destination.route
                     NavigationBarItem(
                         selected = selected,

@@ -22,6 +22,7 @@ sealed class NavDestination(
     object Settings : NavDestination("settings", "Settings", Icons.Default.Settings)
 
     companion object {
-        val bottomNavItems = listOf(Manager, Chat, Editor, Terminal, Preview)
+        val bottomNavItems: List<NavDestination>
+            get() = listOf(Manager, Chat, Editor, Terminal, Preview)
     }
 }
