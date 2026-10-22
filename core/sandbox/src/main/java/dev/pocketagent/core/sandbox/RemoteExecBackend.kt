@@ -3,6 +3,7 @@ package dev.pocketagent.core.sandbox
 import dev.pocketagent.core.model.RemoteConfig
 import dev.pocketagent.core.model.RemoteStatus
 import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.call.body
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -55,7 +56,7 @@ data class RemotePtyStartResponse(
 
 class RemoteExecBackend(
     val configProvider: () -> RemoteConfig,
-    val client: HttpClient = HttpClient {
+    val client: HttpClient = HttpClient(OkHttp) {
         install(HttpTimeout) {
             requestTimeoutMillis = 600_000
             connectTimeoutMillis = 15_000

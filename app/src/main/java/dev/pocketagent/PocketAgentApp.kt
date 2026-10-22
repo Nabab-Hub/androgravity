@@ -42,63 +42,67 @@ class PocketAgentApp : Application() {
         super.onCreate()
         instance = this
 
-        securePreferences = SecurePreferences(this)
-        database = AppDatabase.getInstance(this)
-        workspaceManager = dev.pocketagent.core.storage.WorkspaceManager(this)
+        try {
+            securePreferences = SecurePreferences(this)
+            crashReportManager = dev.pocketagent.core.storage.CrashReportManager(
+                context = this,
+                securePreferences = securePreferences
+            )
+            crashReportManager.installUncaughtExceptionHandler()
 
-        geminiProvider = GeminiProvider(
-            apiKeyProvider = {
-                securePreferences.getString(SecurePreferences.KEY_GEMINI_API_KEY, "") ?: ""
+            database = AppDatabase.getInstance(this)
+            workspaceManager = dev.pocketagent.core.storage.WorkspaceManager(this)
+
+            geminiProvider = GeminiProvider(
+                apiKeyProvider = {
+                    securePreferences.getString(SecurePreferences.KEY_GEMINI_API_KEY, "") ?: ""
+                }
+            )
+
+            linuxManager = dev.pocketagent.core.sandbox.LinuxEnvironmentManager(this)
+            directBackend = dev.pocketagent.core.sandbox.DirectBackend()
+            prootBackend = dev.pocketagent.core.sandbox.ProotBackend(
+                context = this,
+                rootfsDir = linuxManager.activeRootfsDir,
+                workspaceDir = workspaceManager.workspacesRoot,
+                directBackend = directBackend
+            )
+
+            browserController = dev.pocketagent.ui.browser.AndroidBrowserController(this)
+            policyEngine = dev.pocketagent.core.agent.policy.PolicyEngine()
+            toolRouter = dev.pocketagent.core.agent.tools.ToolRouter()
+            mcpServerRepository = dev.pocketagent.core.storage.McpServerRepository(filesDir)
+            mcpManager = dev.pocketagent.core.agent.mcp.McpManager(
+                repository = mcpServerRepository,
+                toolRouter = toolRouter,
+                policyEngine = policyEngine,
+                execBackend = prootBackend
+            )
+
+            agentLoop = dev.pocketagent.core.agent.loop.AgentLoop(
+                modelProvider = geminiProvider,
+                toolRouter = toolRouter,
+                policyEngine = policyEngine,
+                browserController = browserController
+            )
+
+            sessionRepository = dev.pocketagent.core.storage.SessionRepository(database)
+            artifactManager = dev.pocketagent.core.agent.artifacts.ArtifactManager()
+            checkpointManager = dev.pocketagent.core.agent.checkpoint.CheckpointManager(directBackend)
+            worktreeManager = dev.pocketagent.core.agent.worktree.WorktreeManager(directBackend)
+            sessionRecoveryManager = dev.pocketagent.core.storage.SessionRecoveryManager(sessionRepository)
+
+            remoteExecBackend = dev.pocketagent.core.sandbox.RemoteExecBackend(
+                configProvider = { securePreferences.getRemoteConfig() }
+            )
+
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                try {
+                    sessionRecoveryManager.recoverInterruptedSessions()
+                } catch (_: Throwable) {}
             }
-        )
-
-        linuxManager = dev.pocketagent.core.sandbox.LinuxEnvironmentManager(this)
-        directBackend = dev.pocketagent.core.sandbox.DirectBackend()
-        prootBackend = dev.pocketagent.core.sandbox.ProotBackend(
-            context = this,
-            rootfsDir = linuxManager.activeRootfsDir,
-            workspaceDir = workspaceManager.workspacesRoot,
-            directBackend = directBackend
-        )
-
-        browserController = dev.pocketagent.ui.browser.AndroidBrowserController(this)
-        policyEngine = dev.pocketagent.core.agent.policy.PolicyEngine()
-        toolRouter = dev.pocketagent.core.agent.tools.ToolRouter()
-        mcpServerRepository = dev.pocketagent.core.storage.McpServerRepository(filesDir)
-        mcpManager = dev.pocketagent.core.agent.mcp.McpManager(
-            repository = mcpServerRepository,
-            toolRouter = toolRouter,
-            policyEngine = policyEngine,
-            execBackend = prootBackend
-        )
-
-        agentLoop = dev.pocketagent.core.agent.loop.AgentLoop(
-            modelProvider = geminiProvider,
-            toolRouter = toolRouter,
-            policyEngine = policyEngine,
-            browserController = browserController
-        )
-
-        sessionRepository = dev.pocketagent.core.storage.SessionRepository(database)
-        artifactManager = dev.pocketagent.core.agent.artifacts.ArtifactManager()
-        checkpointManager = dev.pocketagent.core.agent.checkpoint.CheckpointManager(directBackend)
-        worktreeManager = dev.pocketagent.core.agent.worktree.WorktreeManager(directBackend)
-        sessionRecoveryManager = dev.pocketagent.core.storage.SessionRecoveryManager(sessionRepository)
-
-        remoteExecBackend = dev.pocketagent.core.sandbox.RemoteExecBackend(
-            configProvider = { securePreferences.getRemoteConfig() }
-        )
-
-        crashReportManager = dev.pocketagent.core.storage.CrashReportManager(
-            context = this,
-            securePreferences = securePreferences
-        )
-        crashReportManager.installUncaughtExceptionHandler()
-
-        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-            try {
-                sessionRecoveryManager.recoverInterruptedSessions()
-            } catch (_: Throwable) {}
+        } catch (e: Throwable) {
+            android.util.Log.e("MazaAgent", "Fatal error during PocketAgentApp.onCreate", e)
         }
     }
 

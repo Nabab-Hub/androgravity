@@ -27,7 +27,7 @@ class SecurePreferences(context: Context) : SecureStorage {
                 EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             )
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Log.e("SecurePreferences", "Failed to initialize EncryptedSharedPreferences, falling back to private prefs", e)
             context.getSharedPreferences("${PREFS_FILE_NAME}_fallback", Context.MODE_PRIVATE)
         }

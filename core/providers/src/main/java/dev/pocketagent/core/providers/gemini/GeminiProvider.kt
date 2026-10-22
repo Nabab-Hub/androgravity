@@ -32,11 +32,12 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+import io.ktor.client.engine.okhttp.OkHttp
 import java.util.UUID
 
 class GeminiProvider(
     private val apiKeyProvider: () -> String,
-    private val client: HttpClient = HttpClient {
+    private val client: HttpClient = HttpClient(OkHttp) {
         install(HttpTimeout) {
             requestTimeoutMillis = 120_000
             connectTimeoutMillis = 30_000
