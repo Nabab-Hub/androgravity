@@ -48,7 +48,14 @@ class SettingsViewModel(
         val geminiKey = securePreferences.getString(SecurePreferences.KEY_GEMINI_API_KEY, "") ?: ""
         val anthropicKey = securePreferences.getString(SecurePreferences.KEY_ANTHROPIC_API_KEY, "") ?: ""
         val openaiKey = securePreferences.getString(SecurePreferences.KEY_OPENAI_API_KEY, "") ?: ""
-        val model = securePreferences.getString(SecurePreferences.KEY_SELECTED_MODEL, "gemini-2.5-flash") ?: "gemini-2.5-flash"
+        val savedModel = securePreferences.getString(SecurePreferences.KEY_SELECTED_MODEL, "gemini-3.7-flash") ?: "gemini-3.7-flash"
+        val model = if (savedModel in setOf("gemini-3.7-flash", "gemini-3.8-flash", "gpt-4o-mini")) {
+            savedModel
+        } else {
+            "gemini-3.7-flash".also {
+                securePreferences.putString(SecurePreferences.KEY_SELECTED_MODEL, it)
+            }
+        }
         val modeStr = securePreferences.getString(SecurePreferences.KEY_AUTONOMY_MODE, AutonomyMode.AGENT_DECIDES.name)
         val mode = try {
             AutonomyMode.valueOf(modeStr ?: AutonomyMode.AGENT_DECIDES.name)

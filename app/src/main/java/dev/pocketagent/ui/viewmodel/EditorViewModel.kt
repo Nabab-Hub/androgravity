@@ -49,33 +49,36 @@ class EditorViewModel(
     fun loadProjects() {
         viewModelScope.launch(Dispatchers.IO) {
             val list = workspaceManager.listProjects()
-            if (list.isEmpty()) {
-                val defaultProject = workspaceManager.createProject("hello_world")
-                _uiState.update {
-                    it.copy(
-                        projects = listOf(defaultProject),
-                        activeProject = defaultProject
-                    )
-                }
-                refreshTree(defaultProject.id)
+            val current = workspaceManager.getActiveProject()
+            _uiState.update {
+                it.copy(
+                    projects = list,
+                    activeProject = current
+                )
+            }
+            refreshTree(current.id)
+            if (_uiState.value.activeTab == null) {
                 openFile("README.md")
-            } else {
-                val current = _uiState.value.activeProject ?: list.first()
-                _uiState.update {
-                    it.copy(
-                        projects = list,
-                        activeProject = current
-                    )
-                }
-                refreshTree(current.id)
-                if (_uiState.value.activeTab == null) {
-                    openFile("README.md")
-                }
             }
         }
     }
 
+    fun refresh() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val list = workspaceManager.listProjects()
+            val current = workspaceManager.getActiveProject()
+            _uiState.update {
+                it.copy(
+                    projects = list,
+                    activeProject = current
+                )
+            }
+            refreshTree(current.id)
+        }
+    }
+
     fun selectProject(project: Project) {
+        workspaceManager.setActiveProject(project)
         _uiState.update {
             it.copy(
                 activeProject = project,

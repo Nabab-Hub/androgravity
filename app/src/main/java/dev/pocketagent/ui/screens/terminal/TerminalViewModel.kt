@@ -61,12 +61,8 @@ class TerminalViewModel(
             val tabNumber = _tabs.value.size + 1
             val tabTitle = "term-$tabNumber"
 
-            val projectList = app.workspaceManager.listProjects()
-            val defaultProjectDir = if (projectList.isNotEmpty()) {
-                File(projectList.first().path)
-            } else {
-                app.workspaceManager.workspacesRoot
-            }
+            val activeProject = app.workspaceManager.getActiveProject()
+            val defaultProjectDir = File(activeProject.path)
 
             val session = try {
                 if (app.prootBackend.isProotAvailable()) {
@@ -103,7 +99,7 @@ class TerminalViewModel(
             val newTab = TerminalTab(
                 id = id,
                 title = tabTitle,
-                output = "Maza Agent Terminal ($tabTitle)\nLinux environment: ${if (app.prootBackend.isProotAvailable()) "proot/alpine" else "host shell"}\n\n",
+                output = "Maza Agent Terminal ($tabTitle)\nWorkspace: ${activeProject.name} (${defaultProjectDir.absolutePath})\nShell: ${if (app.prootBackend.isProotAvailable()) "Alpine Linux (proot)" else "Android Direct Shell"}\n\n",
                 isRunning = true
             )
             _tabs.value = _tabs.value + newTab
@@ -179,6 +175,16 @@ class TerminalViewModel(
         if (echo) {
             val trimmed = text.trimEnd('\r', '\n')
             appendOutput(currentTab.id, "\u001b[1;32m$ $trimmed\u001b[0m\r\n")
+
+            if (trimmed.startsWith("apk") && !app.prootBackend.isProotAvailable()) {
+                appendOutput(
+                    currentTab.id,
+                    "\u001b[1;33m[Notice] 'apk' is Alpine Linux's package manager.\u001b[0m\r\n" +
+                    "Android direct shell does not include apk.\r\n" +
+                    "• If you have Termux installed on this phone, run: pkg install <package>\r\n" +
+                    "• For full Node.js / Python / Git build tooling, use Remote Mode in Settings.\r\n"
+                )
+            }
         }
 
         if (session != null) {

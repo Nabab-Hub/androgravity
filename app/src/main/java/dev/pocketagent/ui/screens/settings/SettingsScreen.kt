@@ -157,11 +157,7 @@ fun SettingsScreen(
                 val models = listOf(
                     "gemini-3.7-flash" to "Gemini 3.7 Flash (Hybrid reasoning & speed)",
                     "gemini-3.8-flash" to "Gemini 3.8 Flash (Next-gen frontier)",
-                    "gemini-2.5-flash" to "Gemini 2.5 Flash (Fast, multimodal, function calling)",
-                    "gemini-1.5-pro" to "Gemini 1.5 Pro (Deep reasoning, long context)",
-                    "gemini-1.5-flash" to "Gemini 1.5 Flash (Lightweight)",
-                    "gpt-4o-mini" to "ChatGPT GPT-4o Mini (Fast, smart, cost-efficient)",
-                    "gpt-4o" to "ChatGPT GPT-4o (Omni flagship reasoning)"
+                    "gpt-4o-mini" to "ChatGPT GPT-4o Mini (Fast, smart, cost-efficient)"
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))

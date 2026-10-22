@@ -17,8 +17,27 @@ import java.util.zip.ZipOutputStream
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class WorkspaceManager(private val context: Context) {
+
+    private val _activeProject = MutableStateFlow<Project?>(null)
+    val activeProject: StateFlow<Project?> = _activeProject.asStateFlow()
+
+    fun getActiveProject(): Project {
+        val current = _activeProject.value
+        if (current != null && File(current.path).isDirectory) return current
+        val list = listProjects()
+        val project = list.firstOrNull() ?: createProject("workspace")
+        _activeProject.value = project
+        return project
+    }
+
+    fun setActiveProject(project: Project) {
+        _activeProject.value = project
+    }
 
     companion object {
         private val IGNORED_DIR_NAMES = setOf(

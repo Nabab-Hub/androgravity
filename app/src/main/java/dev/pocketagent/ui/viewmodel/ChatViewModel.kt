@@ -86,16 +86,12 @@ class ChatViewModel(
             )
         }
 
-        val projects = app.workspaceManager.listProjects()
-        val defaultProjectDir = if (projects.isNotEmpty()) {
-            File(projects.first().path)
-        } else {
-            app.workspaceManager.workspacesRoot
-        }
+        val activeProject = app.workspaceManager.getActiveProject()
+        val defaultProjectDir = File(activeProject.path)
 
         val execBackend = app.getActiveExecBackend()
 
-        val selectedModel = securePreferences.getString(SecurePreferences.KEY_SELECTED_MODEL, "gemini-2.5-flash") ?: "gemini-2.5-flash"
+        val selectedModel = securePreferences.getString(SecurePreferences.KEY_SELECTED_MODEL, "gemini-3.7-flash") ?: "gemini-3.7-flash"
 
         agentJob = viewModelScope.launch {
             val runSessionId = _uiState.value.currentSessionId

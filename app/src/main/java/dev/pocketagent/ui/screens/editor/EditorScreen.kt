@@ -42,6 +42,7 @@ import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
@@ -193,6 +194,11 @@ fun EditorScreen(
         }
     }
 
+    // Auto-refresh workspace files and projects whenever entering Editor
+    LaunchedEffect(Unit) {
+        viewModel.refresh()
+    }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -242,6 +248,7 @@ fun EditorScreen(
                         if (drawerState.isOpen) drawerState.close() else drawerState.open()
                     }
                 },
+                onRefresh = { viewModel.refresh() },
                 onSave = { viewModel.saveCurrentFile() },
                 onToggleDiff = { viewModel.toggleDiffMode() },
                 onOpenSearch = { viewModel.toggleSearchDialog(true) },
@@ -412,6 +419,7 @@ fun EditorTopBar(
     isDirty: Boolean,
     isDiffMode: Boolean,
     onToggleDrawer: () -> Unit,
+    onRefresh: () -> Unit,
     onSave: () -> Unit,
     onToggleDiff: () -> Unit,
     onOpenSearch: () -> Unit,
@@ -441,6 +449,14 @@ fun EditorTopBar(
                 text = activeTab ?: "No file open",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        IconButton(onClick = onRefresh) {
+            Icon(
+                Icons.Default.Refresh,
+                contentDescription = "Refresh workspace",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 

@@ -122,6 +122,9 @@ class DirectBackend : ExecBackend {
             if (dir.exists()) builder.directory(dir)
         }
         val pEnv = builder.environment()
+        val currentPath = pEnv["PATH"] ?: "/sbin:/vendor/bin:/system/sbin:/system/bin:/system/xbin"
+        pEnv["PATH"] = "$currentPath:/data/data/com.termux/files/usr/bin:/data/local/tmp"
+        pEnv["TERM"] = "xterm-256color"
         env.forEach { (k, v) -> pEnv[k] = v }
         builder.redirectErrorStream(true) // Merge stdout and stderr for terminal
         val process = builder.start()
