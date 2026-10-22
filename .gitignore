@@ -13,3 +13,4 @@ captures/
 *.jks
 *.keystore
 *.class
+.kotlin/
