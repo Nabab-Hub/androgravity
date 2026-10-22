@@ -29,6 +29,12 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".CrashActivity"
+            android:exported="false"
+            android:process=":crash"
+            android:theme="@android:style/Theme.NoTitleBar" />
+
         <service
             android:name=".service.AgentForegroundService"
             android:exported="false"
