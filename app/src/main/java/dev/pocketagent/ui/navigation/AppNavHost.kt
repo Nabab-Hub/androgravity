@@ -1,6 +1,9 @@
 package dev.pocketagent.ui.navigation
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -75,23 +78,27 @@ fun PhoneNavigationLayout() {
             )
         },
         bottomBar = {
-            NavigationBar {
-                NavDestination.bottomNavItems.filterNotNull().forEach { destination ->
-                    val selected = currentRoute == destination.route
-                    NavigationBarItem(
-                        selected = selected,
-                        onClick = {
-                            navController.navigate(destination.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
+            val density = LocalDensity.current
+            val isImeOpen = WindowInsets.ime.getBottom(density) > 0
+            if (!isImeOpen) {
+                NavigationBar {
+                    NavDestination.bottomNavItems.filterNotNull().forEach { destination ->
+                        val selected = currentRoute == destination.route
+                        NavigationBarItem(
+                            selected = selected,
+                            onClick = {
+                                navController.navigate(destination.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        icon = { Icon(destination.icon, contentDescription = destination.title) },
-                        label = { Text(destination.title) }
-                    )
+                            },
+                            icon = { Icon(destination.icon, contentDescription = destination.title) },
+                            label = { Text(destination.title) }
+                        )
+                    }
                 }
             }
         }

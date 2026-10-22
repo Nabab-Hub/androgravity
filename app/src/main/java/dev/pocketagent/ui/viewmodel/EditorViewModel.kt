@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
 
@@ -87,9 +88,18 @@ class EditorViewModel(
         openFile("README.md")
     }
 
-    fun createProject(name: String) {
+    fun createProject(name: String, parentDir: File? = null) {
         viewModelScope.launch {
-            val project = workspaceManager.createProject(name)
+            val project = workspaceManager.createProject(name, parentDir)
+            loadProjects()
+            selectProject(project)
+        }
+    }
+
+    fun openExternalFolder(folderPath: String) {
+        viewModelScope.launch {
+            val file = File(folderPath)
+            val project = workspaceManager.registerExternalProject(file)
             loadProjects()
             selectProject(project)
         }

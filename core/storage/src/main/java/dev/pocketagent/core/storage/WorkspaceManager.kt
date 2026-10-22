@@ -14,6 +14,10 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
+
 class WorkspaceManager(private val context: Context) {
 
     val workspacesRoot: File by lazy {
@@ -22,51 +26,115 @@ class WorkspaceManager(private val context: Context) {
         }
     }
 
+    private val externalProjectsFile by lazy { File(context.filesDir, "external_projects.json") }
+
+    private fun loadExternalPaths(): Set<String> {
+        return try {
+            if (externalProjectsFile.exists()) {
+                val list = Json.decodeFromString<List<String>>(externalProjectsFile.readText())
+                list.filter { File(it).isDirectory }.toSet()
+            } else emptySet()
+        } catch (_: Throwable) {
+            emptySet()
+        }
+    }
+
+    private fun saveExternalPaths(paths: Set<String>) {
+        try {
+            externalProjectsFile.writeText(Json.encodeToString(paths.toList()))
+        } catch (_: Throwable) {}
+    }
+
     fun listProjects(): List<Project> {
-        val dirs = workspacesRoot.listFiles { file -> file.isDirectory } ?: emptyArray()
-        return dirs.map { dir ->
+        val internalDirs = (workspacesRoot.listFiles { file -> file.isDirectory } ?: emptyArray()).map { dir ->
             Project(
                 id = dir.name,
                 name = dir.name,
                 path = dir.absolutePath,
                 createdAt = dir.lastModified()
             )
-        }.sortedByDescending { it.createdAt }
+        }
+        val externalDirs = loadExternalPaths().mapNotNull { path ->
+            val dir = File(path)
+            if (dir.exists() && dir.isDirectory) {
+                Project(
+                    id = dir.absolutePath,
+                    name = dir.name,
+                    path = dir.absolutePath,
+                    createdAt = dir.lastModified()
+                )
+            } else null
+        }
+        return (internalDirs + externalDirs).sortedByDescending { it.createdAt }
     }
 
-    fun createProject(name: String): Project {
+    fun registerExternalProject(directory: File): Project {
+        val canonicalDir = directory.canonicalFile
+        if (!canonicalDir.exists()) canonicalDir.mkdirs()
+        val current = loadExternalPaths().toMutableSet()
+        current.add(canonicalDir.absolutePath)
+        saveExternalPaths(current)
+
+        val readme = File(canonicalDir, "README.md")
+        if (!readme.exists()) {
+            readme.writeText("# ${canonicalDir.name}\n\nCreated with Maza Agent.")
+        }
+
+        return Project(
+            id = canonicalDir.absolutePath,
+            name = canonicalDir.name,
+            path = canonicalDir.absolutePath,
+            createdAt = canonicalDir.lastModified()
+        )
+    }
+
+    fun createProject(name: String, parentDir: File? = null): Project {
         val sanitized = name.trim().replace(Regex("[^a-zA-Z0-9._-]"), "_").ifBlank { "project_${UUID.randomUUID().toString().take(8)}" }
-        var targetDir = File(workspacesRoot, sanitized)
+        val root = parentDir ?: workspacesRoot
+        var targetDir = File(root, sanitized)
         if (targetDir.exists()) {
-            targetDir = File(workspacesRoot, "${sanitized}_${System.currentTimeMillis() % 10000}")
+            targetDir = File(root, "${sanitized}_${System.currentTimeMillis() % 10000}")
         }
         targetDir.mkdirs()
 
         // Create a default README.md
         val readme = File(targetDir, "README.md")
-        readme.writeText("# ${targetDir.name}\n\nCreated with PocketAgent.")
+        readme.writeText("# ${targetDir.name}\n\nCreated with Maza Agent.")
+
+        if (parentDir != null && parentDir != workspacesRoot) {
+            val current = loadExternalPaths().toMutableSet()
+            current.add(targetDir.canonicalPath)
+            saveExternalPaths(current)
+        }
 
         return Project(
-            id = targetDir.name,
+            id = if (parentDir != null && parentDir != workspacesRoot) targetDir.absolutePath else targetDir.name,
             name = targetDir.name,
             path = targetDir.absolutePath,
             createdAt = targetDir.lastModified()
         )
     }
 
-    fun createProjectFromTemplate(name: String, template: ProjectTemplate = ProjectTemplate.EMPTY): Project {
+    fun createProjectFromTemplate(name: String, template: ProjectTemplate = ProjectTemplate.EMPTY, parentDir: File? = null): Project {
         val sanitized = name.trim().replace(Regex("[^a-zA-Z0-9._-]"), "_").ifBlank { "project_${UUID.randomUUID().toString().take(8)}" }
-        var targetDir = File(workspacesRoot, sanitized)
+        val root = parentDir ?: workspacesRoot
+        var targetDir = File(root, sanitized)
         if (targetDir.exists()) {
-            targetDir = File(workspacesRoot, "${sanitized}_${System.currentTimeMillis() % 10000}")
+            targetDir = File(root, "${sanitized}_${System.currentTimeMillis() % 10000}")
         }
         targetDir.mkdirs()
 
         val templateManager = TemplateManager()
         templateManager.applyTemplate(targetDir, template)
 
+        if (parentDir != null && parentDir != workspacesRoot) {
+            val current = loadExternalPaths().toMutableSet()
+            current.add(targetDir.canonicalPath)
+            saveExternalPaths(current)
+        }
+
         return Project(
-            id = targetDir.name,
+            id = if (parentDir != null && parentDir != workspacesRoot) targetDir.absolutePath else targetDir.name,
             name = targetDir.name,
             path = targetDir.absolutePath,
             createdAt = targetDir.lastModified()
@@ -75,10 +143,27 @@ class WorkspaceManager(private val context: Context) {
 
     fun deleteProject(projectId: String): Boolean {
         val dir = getProjectDir(projectId)
+        val external = loadExternalPaths()
+        if (external.contains(dir.canonicalPath) || external.contains(dir.absolutePath)) {
+            val current = external.toMutableSet()
+            current.remove(dir.canonicalPath)
+            current.remove(dir.absolutePath)
+            saveExternalPaths(current)
+            return dir.deleteRecursively()
+        }
         return dir.deleteRecursively()
     }
 
     fun getProjectDir(projectId: String): File {
+        val direct = File(projectId)
+        if (direct.isAbsolute && direct.exists() && direct.isDirectory) {
+            return direct
+        }
+        val registered = loadExternalPaths().firstOrNull { it == projectId || File(it).name == projectId }
+        if (registered != null) {
+            val dir = File(registered)
+            if (dir.exists()) return dir
+        }
         val dir = File(workspacesRoot, projectId)
         validatePath(dir)
         return dir

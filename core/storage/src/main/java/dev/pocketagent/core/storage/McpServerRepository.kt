@@ -30,16 +30,90 @@ class McpServerRepository(
     @Synchronized
     private fun loadServers() {
         if (!configFile.exists()) {
-            _servers.value = emptyList()
+            val defaults = getDefaultServers()
+            _servers.value = defaults
+            persist()
             return
         }
         try {
             val content = configFile.readText()
             val list = json.decodeFromString<List<McpServerConfig>>(content)
-            _servers.value = list
+            if (list.isEmpty()) {
+                val defaults = getDefaultServers()
+                _servers.value = defaults
+                persist()
+            } else {
+                _servers.value = list
+            }
         } catch (_: Throwable) {
-            _servers.value = emptyList()
+            val defaults = getDefaultServers()
+            _servers.value = defaults
+            persist()
         }
+    }
+
+    companion object {
+        fun getDefaultServers(): List<McpServerConfig> = listOf(
+            McpServerConfig(
+                id = "mcp_filesystem",
+                name = "filesystem",
+                transportType = McpTransportType.STDIO,
+                command = listOf("npx", "-y", "@modelcontextprotocol/server-filesystem", "."),
+                isEnabled = true,
+                policy = McpPolicy.ALLOW,
+                tools = listOf(
+                    McpToolDefinition("read_file", "Read file contents", "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\"}}}"),
+                    McpToolDefinition("write_file", "Write contents to a file", "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\"},\"content\":{\"type\":\"string\"}}}"),
+                    McpToolDefinition("list_directory", "List files in directory", "{\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\"}}}")
+                )
+            ),
+            McpServerConfig(
+                id = "mcp_fetch",
+                name = "fetch",
+                transportType = McpTransportType.STDIO,
+                command = listOf("npx", "-y", "@modelcontextprotocol/server-fetch"),
+                isEnabled = true,
+                policy = McpPolicy.ALLOW,
+                tools = listOf(
+                    McpToolDefinition("fetch", "Fetch web page content via HTTP", "{\"type\":\"object\",\"properties\":{\"url\":{\"type\":\"string\"}}}")
+                )
+            ),
+            McpServerConfig(
+                id = "mcp_memory",
+                name = "memory",
+                transportType = McpTransportType.STDIO,
+                command = listOf("npx", "-y", "@modelcontextprotocol/server-memory"),
+                isEnabled = true,
+                policy = McpPolicy.ALLOW,
+                tools = listOf(
+                    McpToolDefinition("create_graph", "Create knowledge graph relation", "{}"),
+                    McpToolDefinition("read_graph", "Read knowledge graph entities and relations", "{}")
+                )
+            ),
+            McpServerConfig(
+                id = "mcp_github",
+                name = "github",
+                transportType = McpTransportType.STDIO,
+                command = listOf("npx", "-y", "@modelcontextprotocol/server-github"),
+                isEnabled = false,
+                policy = McpPolicy.ASK,
+                tools = listOf(
+                    McpToolDefinition("search_repositories", "Search GitHub repositories", "{\"type\":\"object\",\"properties\":{\"query\":{\"type\":\"string\"}}}")
+                )
+            ),
+            McpServerConfig(
+                id = "mcp_antigravity",
+                name = "antigravity-hub",
+                transportType = McpTransportType.HTTP_SSE,
+                url = "http://127.0.0.1:8080/sse",
+                isEnabled = false,
+                policy = McpPolicy.ALLOW,
+                tools = listOf(
+                    McpToolDefinition("search_web", "Search the web for real-time documentation and code", "{\"type\":\"object\",\"properties\":{\"query\":{\"type\":\"string\"}}}"),
+                    McpToolDefinition("code_analysis", "Semantic analysis and AST code symbol search", "{\"type\":\"object\",\"properties\":{\"query\":{\"type\":\"string\"}}}")
+                )
+            )
+        )
     }
 
     @Synchronized

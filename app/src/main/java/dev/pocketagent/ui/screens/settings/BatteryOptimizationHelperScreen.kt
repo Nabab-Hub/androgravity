@@ -84,7 +84,7 @@ fun BatteryOptimizationHelperScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = if (isIgnoringBattery) {
-                            "PocketAgent is exempt from Android Doze battery optimizations. Background agent loops and terminal builds will not be frozen."
+                            "Maza Agent is exempt from Android Doze battery optimizations. Background agent loops and terminal builds will not be frozen."
                         } else {
                             "Android Doze may suspend the app when the screen turns off. To run long tasks reliably, request battery optimization exemption."
                         },
@@ -167,7 +167,7 @@ fun BatteryOptimizationHelperScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("• Samsung: Settings → Apps → PocketAgent → Battery → Unrestricted. Also disable 'Put unused apps to sleep'.", fontSize = 12.sp)
+                        Text("• Samsung: Settings → Apps → Maza Agent → Battery → Unrestricted. Also disable 'Put unused apps to sleep'.", fontSize = 12.sp)
                         Text("• Xiaomi: Enable 'Autostart' and set Battery Saver to 'No restrictions'.", fontSize = 12.sp)
                         Text("• OnePlus: App info → Battery usage → Allow background activity.", fontSize = 12.sp)
                     }

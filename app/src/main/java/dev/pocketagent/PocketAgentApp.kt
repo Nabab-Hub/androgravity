@@ -20,6 +20,12 @@ class PocketAgentApp : Application() {
     lateinit var geminiProvider: GeminiProvider
         private set
 
+    lateinit var openAiProvider: dev.pocketagent.core.providers.openai.OpenAiProvider
+        private set
+
+    lateinit var modelProvider: dev.pocketagent.core.providers.ModelProvider
+        private set
+
     lateinit var linuxManager: dev.pocketagent.core.sandbox.LinuxEnvironmentManager
         private set
 
@@ -93,6 +99,21 @@ class PocketAgentApp : Application() {
             }
         )
 
+        openAiProvider = dev.pocketagent.core.providers.openai.OpenAiProvider(
+            apiKeyProvider = {
+                try {
+                    securePreferences.getString(SecurePreferences.KEY_OPENAI_API_KEY, "") ?: ""
+                } catch (_: Throwable) {
+                    ""
+                }
+            }
+        )
+
+        modelProvider = dev.pocketagent.core.providers.CompositeModelProvider(
+            geminiProvider = geminiProvider,
+            openAiProvider = openAiProvider
+        )
+
         linuxManager = dev.pocketagent.core.sandbox.LinuxEnvironmentManager(this)
         directBackend = dev.pocketagent.core.sandbox.DirectBackend()
 
@@ -125,7 +146,7 @@ class PocketAgentApp : Application() {
         }
 
         agentLoop = dev.pocketagent.core.agent.loop.AgentLoop(
-            modelProvider = geminiProvider,
+            modelProvider = modelProvider,
             toolRouter = toolRouter,
             policyEngine = policyEngine,
             browserController = browserController

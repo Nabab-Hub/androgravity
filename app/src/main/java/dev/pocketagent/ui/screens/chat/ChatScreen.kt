@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -83,7 +84,7 @@ fun ChatScreen(
         }
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
+    Column(modifier = modifier.fillMaxSize().imePadding()) {
         // Autonomy Mode Selector Bar
         AutonomyModeBar(
             currentMode = uiState.autonomyMode,
@@ -444,7 +445,7 @@ fun SurfaceInputBar(
         OutlinedTextField(
             value = inputText,
             onValueChange = onInputChange,
-            placeholder = { Text("Ask PocketAgent to plan, code, or run...") },
+            placeholder = { Text("Ask Maza Agent to plan, code, or run...") },
             modifier = Modifier.weight(1f),
             maxLines = 4,
             shape = RoundedCornerShape(24.dp)

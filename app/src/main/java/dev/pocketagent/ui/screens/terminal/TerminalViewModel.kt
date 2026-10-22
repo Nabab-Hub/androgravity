@@ -103,7 +103,7 @@ class TerminalViewModel(
             val newTab = TerminalTab(
                 id = id,
                 title = tabTitle,
-                output = "PocketAgent Terminal ($tabTitle)\nLinux rootfs: ${if (app.prootBackend.isProotAvailable()) "proot/alpine" else "host shell"}\n\n",
+                output = "Maza Agent Terminal ($tabTitle)\nLinux environment: ${if (app.prootBackend.isProotAvailable()) "proot/alpine" else "host shell"}\n\n",
                 isRunning = true
             )
             _tabs.value = _tabs.value + newTab
@@ -169,18 +169,28 @@ class TerminalViewModel(
         }
     }
 
-    fun sendInput(text: String) {
+    fun sendInput(text: String, echo: Boolean = false) {
         val currentTabs = _tabs.value
         val index = _activeTabIndex.value
         if (index !in currentTabs.indices) return
         val currentTab = currentTabs[index]
-        val session = sessions[currentTab.id] ?: return
+        val session = sessions[currentTab.id]
 
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                session.write(text)
-            } catch (_: Throwable) {
+        if (echo) {
+            val trimmed = text.trimEnd('\r', '\n')
+            appendOutput(currentTab.id, "\u001b[1;32m$ $trimmed\u001b[0m\r\n")
+        }
+
+        if (session != null) {
+            viewModelScope.launch(Dispatchers.IO) {
+                try {
+                    session.write(text)
+                } catch (t: Throwable) {
+                    appendOutput(currentTab.id, "\n[Error: ${t.message}]\n")
+                }
             }
+        } else {
+            appendOutput(currentTab.id, "\n[No active session. Tap + above to start a shell.]\n")
         }
     }
 

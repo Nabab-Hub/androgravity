@@ -133,6 +133,31 @@ fun EditorScreen(
         }
     }
 
+    val openFolderLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+            } catch (_: Throwable) {}
+
+            val docId = android.provider.DocumentsContract.getTreeDocumentId(uri)
+            val path = if (docId.startsWith("primary:")) {
+                val subPath = docId.removePrefix("primary:")
+                "${android.os.Environment.getExternalStorageDirectory().absolutePath}/$subPath"
+            } else if (docId.contains(":")) {
+                val parts = docId.split(":")
+                "/storage/${parts[0]}/${parts.getOrElse(1) { "" }}"
+            } else {
+                "/storage/emulated/0/$docId"
+            }
+            viewModel.openExternalFolder(path)
+        }
+    }
+
     // Sync content to webview
     LaunchedEffect(uiState.activeContent, uiState.activeTab, isEditorReady) {
         if (isEditorReady && webViewRef != null) {
@@ -179,6 +204,10 @@ fun EditorScreen(
                         coroutineScope.launch { drawerState.close() }
                     },
                     onNewProject = { showNewProjectDialog = true },
+                    onOpenDeviceFolder = {
+                        openFolderLauncher.launch(null)
+                        coroutineScope.launch { drawerState.close() }
+                    },
                     onOpenFile = { path ->
                         viewModel.openFile(path)
                         coroutineScope.launch { drawerState.close() }
@@ -512,6 +541,7 @@ fun FileTreeDrawerContent(
     uiState: dev.pocketagent.ui.viewmodel.EditorUiState,
     onSelectProject: (dev.pocketagent.core.model.Project) -> Unit,
     onNewProject: () -> Unit,
+    onOpenDeviceFolder: () -> Unit,
     onOpenFile: (String) -> Unit,
     onToggleFolder: (String) -> Unit,
     onNewFile: () -> Unit,
@@ -560,6 +590,13 @@ fun FileTreeDrawerContent(
                 onClick = {
                     projectDropdown = false
                     onNewProject()
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("📂 Open Phone Folder...", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
+                onClick = {
+                    projectDropdown = false
+                    onOpenDeviceFolder()
                 }
             )
         }

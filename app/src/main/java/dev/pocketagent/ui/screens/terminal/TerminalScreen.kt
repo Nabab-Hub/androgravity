@@ -12,11 +12,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -71,6 +71,7 @@ fun TerminalScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF0D1117))
+            .imePadding()
     ) {
         // Bootstrap Setup Card (if not ready and tabs empty)
         if (bootstrapStatus !is BootstrapStatus.Ready && tabs.isEmpty()) {
@@ -145,11 +146,11 @@ fun TerminalScreen(
 
             // Active Tab Terminal Buffer
             val currentTab = tabs.getOrNull(activeIndex)
-            val listState = rememberLazyListState()
+            val terminalScrollState = rememberScrollState()
 
             LaunchedEffect(currentTab?.output) {
                 if ((currentTab?.output?.length ?: 0) > 0) {
-                    listState.scrollToItem(0)
+                    terminalScrollState.scrollTo(terminalScrollState.maxValue)
                 }
             }
 
@@ -164,19 +165,17 @@ fun TerminalScreen(
                         AnsiParser.parse(currentTab.output)
                     }
 
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier.fillMaxSize(),
-                        reverseLayout = false
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(terminalScrollState)
                     ) {
-                        item {
-                            Text(
-                                text = annotatedOutput,
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 12.sp,
-                                lineHeight = 16.sp
-                            )
-                        }
+                        Text(
+                            text = annotatedOutput,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp
+                        )
                     }
                 } else {
                     Box(
@@ -242,7 +241,7 @@ fun TerminalScreen(
                     keyboardActions = KeyboardActions(
                         onSend = {
                             if (inputCommand.isNotBlank()) {
-                                viewModel.sendInput("$inputCommand\n")
+                                viewModel.sendInput("$inputCommand\n", echo = true)
                                 inputCommand = ""
                             }
                         }
@@ -254,7 +253,7 @@ fun TerminalScreen(
                 Button(
                     onClick = {
                         if (inputCommand.isNotBlank()) {
-                            viewModel.sendInput("$inputCommand\n")
+                            viewModel.sendInput("$inputCommand\n", echo = true)
                             inputCommand = ""
                         }
                     },

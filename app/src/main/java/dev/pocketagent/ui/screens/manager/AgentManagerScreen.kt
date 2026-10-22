@@ -256,6 +256,22 @@ fun NewSessionDialog(
                     }
                 }
 
+                Text("AI Model:", style = MaterialTheme.typography.labelMedium)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    listOf("gemini-3.7-flash", "gemini-3.8-flash", "gemini-2.5-flash", "gemini-1.5-flash", "gpt-4o-mini", "gpt-4o").forEach { modelId ->
+                        FilterChip(
+                            selected = selectedModel == modelId,
+                            onClick = { selectedModel = modelId },
+                            label = { Text(modelId) }
+                        )
+                    }
+                }
+
                 Text("Autonomy Mode:", style = MaterialTheme.typography.labelMedium)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
