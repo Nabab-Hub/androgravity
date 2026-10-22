@@ -20,7 +20,7 @@ data class SettingsUiState(
     val geminiApiKey: String = "",
     val anthropicApiKey: String = "",
     val openaiApiKey: String = "",
-    val selectedModel: String = "gemini-2.5-flash",
+    val selectedModel: String = "gemini-1.5-flash",
     val autonomyMode: AutonomyMode = AutonomyMode.AGENT_DECIDES,
     val execBackendType: ExecBackendType = ExecBackendType.PROOT,
     val remoteConfig: RemoteConfig = RemoteConfig(),
@@ -48,11 +48,10 @@ class SettingsViewModel(
         val geminiKey = securePreferences.getString(SecurePreferences.KEY_GEMINI_API_KEY, "") ?: ""
         val anthropicKey = securePreferences.getString(SecurePreferences.KEY_ANTHROPIC_API_KEY, "") ?: ""
         val openaiKey = securePreferences.getString(SecurePreferences.KEY_OPENAI_API_KEY, "") ?: ""
-        val savedModel = securePreferences.getString(SecurePreferences.KEY_SELECTED_MODEL, "gemini-3.7-flash") ?: "gemini-3.7-flash"
-        val model = if (savedModel in setOf("gemini-3.7-flash", "gemini-3.8-flash", "gpt-4o-mini")) {
-            savedModel
-        } else {
-            "gemini-3.7-flash".also {
+        val savedModel = securePreferences.getString(SecurePreferences.KEY_SELECTED_MODEL, "gemini-1.5-flash") ?: "gemini-1.5-flash"
+        val model = when (savedModel) {
+            "gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro", "gpt-4o-mini" -> savedModel
+            else -> "gemini-1.5-flash".also {
                 securePreferences.putString(SecurePreferences.KEY_SELECTED_MODEL, it)
             }
         }

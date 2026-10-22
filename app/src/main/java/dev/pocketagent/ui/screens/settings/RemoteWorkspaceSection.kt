@@ -82,7 +82,7 @@ fun RemoteWorkspaceSection(
             val backendOptions = listOf(
                 Triple(ExecBackendType.PROOT, "Embedded Linux (PRoot)", "Runs offline in local Alpine Linux userland on device"),
                 Triple(ExecBackendType.DIRECT, "Direct App Sandbox", "Runs in Android app process sandbox (limited toolset)"),
-                Triple(ExecBackendType.REMOTE, "Remote Desktop / Cloud VM", "Runs on your PC or cloud machine via authenticated bridge")
+                Triple(ExecBackendType.REMOTE, "Termux Bridge / Remote PC", "Runs inside local Termux (127.0.0.1:8787) or desktop PC / Cloud VM")
             )
 
             backendOptions.forEach { (type, title, desc) ->
@@ -122,7 +122,7 @@ fun RemoteWorkspaceSection(
                             value = uiState.remoteConfig.host,
                             onValueChange = { viewModel.updateRemoteConfig(uiState.remoteConfig.copy(host = it)) },
                             label = { Text("Host / IP") },
-                            placeholder = { Text("10.0.2.2 or 192.168.1.100") },
+                            placeholder = { Text("127.0.0.1 (Termux) or 192.168.1.x") },
                             modifier = Modifier.weight(2f),
                             singleLine = true
                         )

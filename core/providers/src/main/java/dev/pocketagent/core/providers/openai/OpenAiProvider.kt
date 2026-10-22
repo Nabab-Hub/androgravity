@@ -71,7 +71,12 @@ class OpenAiProvider(
 
             if (response.status.value !in 200..299) {
                 val errorBody: String = response.body()
-                emit(ChatEvent.Error("OpenAI API returned status ${response.status.value}: $errorBody"))
+                val hint = when (response.status.value) {
+                    429 -> "\n\nHint: Quota exceeded or zero credit balance on platform.openai.com/billing. Note: ChatGPT Plus does NOT include API credits. Please add prepaid credits or switch to Google Gemini 1.5 Flash in Settings."
+                    401 -> "\n\nHint: Invalid OpenAI API key. Please verify your key in Settings."
+                    else -> ""
+                }
+                emit(ChatEvent.Error("OpenAI API returned status ${response.status.value}: $errorBody$hint"))
                 return@flow
             }
 

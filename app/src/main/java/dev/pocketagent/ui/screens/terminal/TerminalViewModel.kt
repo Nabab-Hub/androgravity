@@ -176,13 +176,16 @@ class TerminalViewModel(
             val trimmed = text.trimEnd('\r', '\n')
             appendOutput(currentTab.id, "\u001b[1;32m$ $trimmed\u001b[0m\r\n")
 
-            if (trimmed.startsWith("apk") && !app.prootBackend.isProotAvailable()) {
+            if ((trimmed.startsWith("apk") || trimmed.startsWith("pkg") || trimmed.startsWith("apt")) && !app.prootBackend.isProotAvailable()) {
                 appendOutput(
                     currentTab.id,
-                    "\u001b[1;33m[Notice] 'apk' is Alpine Linux's package manager.\u001b[0m\r\n" +
-                    "Android direct shell does not include apk.\r\n" +
-                    "• If you have Termux installed on this phone, run: pkg install <package>\r\n" +
-                    "• For full Node.js / Python / Git build tooling, use Remote Mode in Settings.\r\n"
+                    "\u001b[1;33m[Termux / Package Manager Notice]\u001b[0m\r\n" +
+                    "Android security sandbox prevents direct access to Termux private files (/data/data/com.termux/).\r\n" +
+                    "• To connect Maza Agent with your Termux packages (git, node, python, pkg):\r\n" +
+                    "  1) In Termux, run:\r\n" +
+                    "     python <(curl -sL https://raw.githubusercontent.com/Nabab-Hub/maza-agent/main/tools/pocket-api/pocket-api.py) --port 8787\r\n" +
+                    "  2) In Maza Agent > Settings > Sandbox, select 'Remote Desktop / Cloud VM' -> Host: 127.0.0.1, Port: 8787.\r\n" +
+                    "  All agent operations will then execute directly inside your Termux environment.\r\n"
                 )
             }
         }

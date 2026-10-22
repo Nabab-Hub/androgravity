@@ -62,29 +62,57 @@ class GeminiProvider(
         }
 
         val effectiveModel = resolveGeminiModel(request.model)
-        val url = "https://generativelanguage.googleapis.com/v1beta/models/$effectiveModel:streamGenerateContent?alt=sse&key=$apiKey"
-
         val requestBody = buildGeminiRequestBody(request)
 
-        try {
-            val response = client.post(url) {
+        val success = tryExecuteModelStream(effectiveModel, apiKey, requestBody, this)
+        if (!success && effectiveModel != FALLBACK_MODEL) {
+            emit(ChatEvent.TextDelta("*(Gemini model '$effectiveModel' was temporarily unavailable. Automatically fell back to $FALLBACK_MODEL)*\n\n"))
+            tryExecuteModelStream(FALLBACK_MODEL, apiKey, requestBody, this)
+        }
+    }
+
+    private suspend fun tryExecuteModelStream(
+        modelName: String,
+        apiKey: String,
+        requestBody: JsonObject,
+        collector: kotlinx.coroutines.flow.FlowCollector<ChatEvent>
+    ): Boolean {
+        val url = "https://generativelanguage.googleapis.com/v1beta/models/$modelName:streamGenerateContent?alt=sse&key=$apiKey"
+
+        val response = try {
+            client.post(url) {
                 contentType(ContentType.Application.Json)
                 header(HttpHeaders.Accept, "text/event-stream")
                 header("x-goog-api-key", apiKey)
                 setBody(requestBody.toString())
             }
+        } catch (e: Exception) {
+            if (modelName != FALLBACK_MODEL) {
+                // Return false to allow fallback attempt
+                return false
+            }
+            collector.emit(ChatEvent.Error("Gemini connection error (${e.javaClass.simpleName}): ${e.message}", e))
+            return true
+        }
 
-            if (response.status.value !in 200..299) {
-                val errorBody: String = response.body()
-                val hint = when (response.status.value) {
-                    403 -> "\n\nHint: Ensure your API key is generated from Google AI Studio (aistudio.google.com). Or switch to ChatGPT (gpt-4o-mini) in Settings."
-                    404 -> "\n\nHint: Model '$effectiveModel' was not found on Google's endpoint. Check that your Google AI Studio project has access to this model, or select ChatGPT (gpt-4o-mini) in Settings."
-                    else -> ""
-                }
-                emit(ChatEvent.Error("Gemini API returned status ${response.status.value}: $errorBody$hint"))
-                return@flow
+        if (response.status.value !in 200..299) {
+            if (modelName != FALLBACK_MODEL && response.status.value in listOf(503, 404, 500)) {
+                // High demand / model not found, fallback to reliable 1.5 flash
+                return false
             }
 
+            val errorBody: String = try { response.body() } catch (_: Exception) { "" }
+            val hint = when (response.status.value) {
+                403 -> "\n\nHint: Permission Denied. Your Google Cloud project or key is restricted. Please create a fresh API key at https://aistudio.google.com/app/apikey (choose default project) and save it in Settings."
+                404 -> "\n\nHint: Model '$modelName' was not found on Google's API endpoint. Use Gemini 1.5 Flash in Settings."
+                503 -> "\n\nHint: Model is currently overloaded on Google's servers. Please try again or switch to Gemini 1.5 Flash."
+                else -> ""
+            }
+            collector.emit(ChatEvent.Error("Gemini API returned status ${response.status.value}: $errorBody$hint"))
+            return true
+        }
+
+        try {
             val channel = response.bodyAsChannel()
             val sseParser = dev.pocketagent.core.providers.sse.SseParser()
 
@@ -101,7 +129,7 @@ class GeminiProvider(
                             val promptTokens = usage["promptTokenCount"]?.jsonPrimitive?.intOrNull ?: 0
                             val candidateTokens = usage["candidatesTokenCount"]?.jsonPrimitive?.intOrNull ?: 0
                             val totalTokens = usage["totalTokenCount"]?.jsonPrimitive?.intOrNull ?: 0
-                            emit(ChatEvent.Usage(promptTokens, candidateTokens, totalTokens))
+                            collector.emit(ChatEvent.Usage(promptTokens, candidateTokens, totalTokens))
                         }
 
                         // Extract candidates
@@ -117,7 +145,7 @@ class GeminiProvider(
                                     val partObj = part.jsonObject
                                     val text = partObj["text"]?.jsonPrimitive?.contentOrNull
                                     if (text != null && text.isNotEmpty()) {
-                                        emit(ChatEvent.TextDelta(text))
+                                        collector.emit(ChatEvent.TextDelta(text))
                                     }
 
                                     val functionCall = partObj["functionCall"]?.jsonObject
@@ -125,13 +153,13 @@ class GeminiProvider(
                                         val name = functionCall["name"]?.jsonPrimitive?.contentOrNull ?: "unknown"
                                         val args = functionCall["args"]?.jsonObject?.toString() ?: "{}"
                                         val callId = UUID.randomUUID().toString()
-                                        emit(ChatEvent.ToolCallChunk(ToolCall(callId, name, args)))
+                                        collector.emit(ChatEvent.ToolCallChunk(ToolCall(callId, name, args)))
                                     }
                                 }
                             }
 
                             if (finishReason != null && finishReason != "STOP") {
-                                emit(ChatEvent.Done(finishReason))
+                                collector.emit(ChatEvent.Done(finishReason))
                             }
                         }
                     } catch (e: Exception) {
@@ -140,9 +168,14 @@ class GeminiProvider(
                 }
             }
 
-            emit(ChatEvent.Done())
+            collector.emit(ChatEvent.Done())
+            return true
         } catch (e: Exception) {
-            emit(ChatEvent.Error(e.message ?: "Unknown network error", e))
+            if (modelName != FALLBACK_MODEL) {
+                return false
+            }
+            collector.emit(ChatEvent.Error(e.message ?: "Unknown network error", e))
+            return true
         }
     }
 
@@ -246,11 +279,20 @@ class GeminiProvider(
     }
 
     companion object {
-        const val DEFAULT_MODEL = "gemini-3.7-flash"
+        const val DEFAULT_MODEL = "gemini-1.5-flash"
+        const val FALLBACK_MODEL = "gemini-1.5-flash"
 
         fun resolveGeminiModel(model: String): String {
             val clean = model.trim().removePrefix("models/")
-            return if (clean.isNotBlank()) clean else DEFAULT_MODEL
+            return when {
+                clean.isBlank() -> DEFAULT_MODEL
+                clean == "gemini-1.5-flash" -> "gemini-1.5-flash"
+                clean == "gemini-1.5-pro" -> "gemini-1.5-pro"
+                clean == "gemini-2.0-flash" -> "gemini-2.0-flash"
+                clean == "gemini-2.0-flash-exp" -> "gemini-2.0-flash"
+                clean.contains("3.7") || clean.contains("3.8") || clean.contains("2.5") -> DEFAULT_MODEL
+                else -> clean
+            }
         }
     }
 }

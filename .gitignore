@@ -14,3 +14,7 @@ captures/
 *.keystore
 *.class
 .kotlin/
+dump/
+*.jpeg
+*.jpg
+*.png
