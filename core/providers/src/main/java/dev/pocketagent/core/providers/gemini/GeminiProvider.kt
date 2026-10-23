@@ -194,8 +194,12 @@ class GeminiProvider(
                                     if (functionCall != null) {
                                         val name = functionCall["name"]?.jsonPrimitive?.contentOrNull ?: "unknown"
                                         val args = functionCall["args"]?.jsonObject?.toString() ?: "{}"
-                                        val callId = UUID.randomUUID().toString()
-                                        collector.emit(ChatEvent.ToolCallChunk(ToolCall(callId, name, args)))
+                                        val thoughtSig = partObj["thoughtSignature"]?.jsonPrimitive?.contentOrNull
+                                            ?: partObj["thought_signature"]?.jsonPrimitive?.contentOrNull
+                                            ?: functionCall["thoughtSignature"]?.jsonPrimitive?.contentOrNull
+                                            ?: functionCall["thought_signature"]?.jsonPrimitive?.contentOrNull
+                                        val callId = functionCall["id"]?.jsonPrimitive?.contentOrNull ?: UUID.randomUUID().toString()
+                                        collector.emit(ChatEvent.ToolCallChunk(ToolCall(callId, name, args, thoughtSig)))
                                     }
                                 }
                             }
@@ -217,7 +221,7 @@ class GeminiProvider(
         }
     }
 
-    private fun buildGeminiRequestBody(request: ChatRequest): JsonObject {
+    internal fun buildGeminiRequestBody(request: ChatRequest): JsonObject {
         return buildJsonObject {
             // Contents
             put("contents", buildJsonArray {
@@ -249,6 +253,9 @@ class GeminiProvider(
                                                     put("args", buildJsonObject {})
                                                 }
                                             })
+                                            toolCall.thoughtSignature?.let { sig ->
+                                                put("thoughtSignature", sig)
+                                            }
                                         })
                                     }
                                 })

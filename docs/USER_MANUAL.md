@@ -171,17 +171,84 @@ Modern Android OS versions aggressively terminate background apps. Androgravity 
 
 ---
 
-## 11. Remote Workspace Mode
+## 11. Connecting with Termux (Local Termux Bridge) & Remote PC
 
-When developing massive monorepos or resource-heavy projects that exceed mobile thermal/RAM limits:
-1. Run the companion daemon on your PC or Cloud VM:
+Androgravity allows you to harness the full power of **Termux** on your Android device (or a remote desktop PC / Cloud VM). This enables running standard Linux tools (`git`, `node`, `npm`, `python3`, `clang`, `rust`, etc.) directly with full native package support.
+
+### 11.1 How It Works
+Androgravity communicates with a lightweight, zero-dependency background daemon (`pocket-api.py`) running in Termux on `127.0.0.1:8787`. All shell commands, filesystem operations, and builds requested by the AI agent are dispatched directly to Termux.
+
+---
+
+### 11.2 Step-by-Step Termux Setup Guide
+
+#### Step 1: Install & Prepare Termux
+1. Open **Termux** (install from F-Droid or GitHub for the latest releases).
+2. Update packages and install Python:
    ```bash
-   python3 tools/pocket-api/pocket-api.py --port 8787 --token mysecret --workspace ~/projects
+   pkg update -y && pkg install -y python git openssl
    ```
-2. In Androgravity **Settings $\to$ Execution Sandbox Mode**, select **Remote Desktop / Cloud VM**.
-3. Enter your PC's IP or Tailscale domain and token.
-4. Tap **Test Remote Daemon Connection** $\to$ **Save Settings**.
-5. All builds and commands will now execute with the raw speed of your desktop, while you control everything from your phone!
+
+#### Step 2: Generate an Auth Token
+An authentication token protects your Termux environment from unauthorized local access. You can generate a secure random 32-character hexadecimal token using `openssl` or `python`:
+
+- **Option A (using OpenSSL)**:
+  ```bash
+  openssl rand -hex 16
+  ```
+- **Option B (using Python)**:
+  ```bash
+  python3 -c "import secrets; print(secrets.token_hex(16))"
+  ```
+- *Example generated token*: `9a3f8c2e1b4d5e709a12c45f89e2b10a`  
+*(Copy this token; you will paste it into Androgravity settings).*
+
+#### Step 3: Download and Run the Daemon (`pocket-api.py`)
+In Termux, you can fetch `pocket-api.py` directly from your repository or copy it:
+
+```bash
+# Download the bridge daemon script
+curl -sSL https://raw.githubusercontent.com/Nabab-Hub/androgravity/main/tools/pocket-api/pocket-api.py -o pocket-api.py
+
+# Or if you already cloned the repository in Termux:
+# cd androgravity/tools/pocket-api
+```
+
+Now start the daemon, replacing `<YOUR_TOKEN>` with the token generated in Step 2:
+```bash
+python3 pocket-api.py --port 8787 --token <YOUR_TOKEN> --workspace ~/projects
+```
+
+You will see:
+```text
+[pocket-api] Listening on 0.0.0.0:8787
+[pocket-api] Workspace root: /data/data/com.termux/files/home/projects
+[pocket-api] Auth token required: Yes (Bearer ***)
+```
+
+> **Tip for Background Execution**:  
+> To keep the daemon running even when you switch apps, acquire a Termux WakeLock:
+> ```bash
+> termux-wake-lock
+> python3 pocket-api.py --port 8787 --token <YOUR_TOKEN> &
+> ```
+
+---
+
+### 11.3 Configure Androgravity App
+
+1. In Androgravity, tap the **Settings** icon.
+2. Scroll to **Execution Sandbox Mode** and select **Termux Bridge / Remote PC**.
+3. In the **Remote Host Configuration** section:
+   - **Host / IP**: `127.0.0.1` (or your PC's LAN IP if running on a desktop)
+   - **Port**: `8787`
+   - **Auth Bearer Token**: Paste the token you generated in Step 2
+   - **Use HTTPS / WSS**: Leave **OFF** for local Termux (`127.0.0.1`)
+4. Tap **Test Remote Daemon Connection**.
+   - You should see a green checkmark: `Online: Linux (v1.0.0), Latency: < 10 ms`.
+5. Tap **Save Settings** at the bottom of the Settings screen.
+
+Now, whenever you ask Androgravity to plan, code, build, or run tasks, it will seamlessly execute commands in your Termux environment!
 
 ---
 

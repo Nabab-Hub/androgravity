@@ -6,7 +6,8 @@ import kotlinx.serialization.Serializable
 data class ToolCall(
     val id: String,
     val name: String,
-    val argsJson: String
+    val argsJson: String,
+    val thoughtSignature: String? = null
 )
 
 @Serializable
