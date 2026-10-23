@@ -18,3 +18,5 @@ dump/
 *.jpeg
 *.jpg
 *.png
+config.bat
+node_modules

@@ -104,7 +104,7 @@ class AgentManagerViewModel(
         _showNewDialog.value = false
     }
 
-    fun createSession(title: String, projectId: String? = null, model: String = "gemini-1.5-flash", mode: AutonomyMode = AutonomyMode.AGENT_DECIDES) {
+    fun createSession(title: String, projectId: String? = null, model: String = "gemini-3.7-flash", mode: AutonomyMode = AutonomyMode.AGENT_DECIDES) {
         viewModelScope.launch {
             val projId = projectId ?: uiState.value.projects.firstOrNull()?.id ?: "default"
             val newSession = AgentSession(

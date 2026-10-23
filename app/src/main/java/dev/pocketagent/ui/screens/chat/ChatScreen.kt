@@ -26,24 +26,34 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import dev.pocketagent.core.model.Project
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -81,6 +91,8 @@ fun ChatScreen(
     LaunchedEffect(sessionId) {
         if (sessionId != null) {
             viewModel.loadSession(sessionId)
+        } else {
+            viewModel.loadActiveWorkspace()
         }
     }
 
@@ -91,6 +103,15 @@ fun ChatScreen(
     }
 
     Column(modifier = modifier.fillMaxSize().imePadding()) {
+        // Workspace & New Session Bar
+        WorkspaceSelectorBar(
+            activeProject = uiState.activeProject,
+            projects = uiState.projects,
+            onSelectWorkspace = { viewModel.switchWorkspace(it) },
+            onCreateWorkspace = { viewModel.createNewWorkspace(it) },
+            onNewSession = { viewModel.startNewSession() }
+        )
+
         // Autonomy Mode Selector Bar
         AutonomyModeBar(
             currentMode = uiState.autonomyMode,
@@ -204,6 +225,157 @@ fun ChatScreen(
             },
             onCancel = { viewModel.cancelStream() }
         )
+    }
+}
+
+@Composable
+fun WorkspaceSelectorBar(
+    activeProject: Project?,
+    projects: List<Project>,
+    onSelectWorkspace: (Project) -> Unit,
+    onCreateWorkspace: (String) -> Unit,
+    onNewSession: () -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var showCreateDialog by remember { mutableStateOf(false) }
+    var newWorkspaceName by remember { mutableStateOf("") }
+
+    if (showCreateDialog) {
+        AlertDialog(
+            onDismissRequest = { showCreateDialog = false },
+            title = { Text("New Workspace") },
+            text = {
+                OutlinedTextField(
+                    value = newWorkspaceName,
+                    onValueChange = { newWorkspaceName = it },
+                    label = { Text("Workspace Name") },
+                    placeholder = { Text("e.g. my-app") },
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (newWorkspaceName.isNotBlank()) {
+                            onCreateWorkspace(newWorkspaceName.trim())
+                            newWorkspaceName = ""
+                            showCreateDialog = false
+                        }
+                    }
+                ) {
+                    Text("Create")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCreateDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box {
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                modifier = Modifier.clickable { expanded = true }
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Folder,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = activeProject?.name ?: "Select Workspace",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(
+                        Icons.Default.ArrowDropDown,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.outline
+                    )
+                }
+            }
+
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                Text(
+                    text = "Select Workspace",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                )
+                projects.forEach { proj ->
+                    DropdownMenuItem(
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Default.Folder,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = if (proj.id == activeProject?.id) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    proj.name,
+                                    fontWeight = if (proj.id == activeProject?.id) FontWeight.Bold else FontWeight.Normal
+                                )
+                            }
+                        },
+                        onClick = {
+                            expanded = false
+                            onSelectWorkspace(proj)
+                        }
+                    )
+                }
+                HorizontalDivider()
+                DropdownMenuItem(
+                    text = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Create New Workspace...", color = MaterialTheme.colorScheme.primary)
+                        }
+                    },
+                    onClick = {
+                        expanded = false
+                        showCreateDialog = true
+                    }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        // New Chat Button
+        OutlinedButton(
+            onClick = onNewSession,
+            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+            shape = RoundedCornerShape(8.dp)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text("New Chat", style = MaterialTheme.typography.labelSmall)
+        }
     }
 }
 

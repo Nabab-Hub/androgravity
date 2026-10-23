@@ -12,12 +12,14 @@ import dev.pocketagent.core.model.ToolCall
 import dev.pocketagent.core.storage.SecurePreferences
 import dev.pocketagent.core.storage.database.AppDatabase
 import dev.pocketagent.core.storage.database.MessageEntity
+import dev.pocketagent.core.model.Project
 import dev.pocketagent.core.storage.database.SessionEntity
 import dev.pocketagent.service.AgentForegroundService
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
@@ -36,7 +38,10 @@ data class ChatUiState(
     val pendingApproval: PendingApproval? = null,
     val autonomyMode: AutonomyMode = AutonomyMode.SEMI_AUTONOMY,
     val errorMessage: String? = null,
-    val currentSessionId: String = UUID.randomUUID().toString()
+    val currentSessionId: String = UUID.randomUUID().toString(),
+    val activeProject: Project? = null,
+    val projects: List<Project> = emptyList(),
+    val sessionTitle: String = "New Task"
 )
 
 class ChatViewModel(
@@ -55,12 +60,79 @@ class ChatViewModel(
     init {
         _uiState.update {
             it.copy(
-                autonomyMode = policyEngine.autonomyMode,
+                autonomyMode = policyEngine.autonomyMode
+            )
+        }
+        loadActiveWorkspace()
+    }
+
+    fun loadActiveWorkspace() {
+        viewModelScope.launch {
+            val projects = app.workspaceManager.listProjects()
+            val active = app.workspaceManager.getActiveProject()
+            _uiState.update {
+                it.copy(
+                    projects = projects,
+                    activeProject = active
+                )
+            }
+            if (_uiState.value.messages.isEmpty()) {
+                val existingSessions = database.sessionDao().getSessionsForProject(active.id).firstOrNull()
+                val latest = existingSessions?.firstOrNull()
+                if (latest != null) {
+                    loadSession(latest.id)
+                } else {
+                    startNewSession()
+                }
+            }
+        }
+    }
+
+    fun switchWorkspace(project: Project) {
+        viewModelScope.launch {
+            app.workspaceManager.setActiveProject(project)
+            val projects = app.workspaceManager.listProjects()
+            _uiState.update {
+                it.copy(
+                    projects = projects,
+                    activeProject = project,
+                    messages = emptyList(),
+                    errorMessage = null
+                )
+            }
+            val existingSessions = database.sessionDao().getSessionsForProject(project.id).firstOrNull()
+            val latest = existingSessions?.firstOrNull()
+            if (latest != null) {
+                loadSession(latest.id)
+            } else {
+                startNewSession()
+            }
+        }
+    }
+
+    fun createNewWorkspace(name: String) {
+        if (name.isBlank()) return
+        viewModelScope.launch {
+            val project = app.workspaceManager.createProject(name.trim())
+            switchWorkspace(project)
+        }
+    }
+
+    fun startNewSession() {
+        val newSessionId = UUID.randomUUID().toString()
+        val activeProj = _uiState.value.activeProject ?: app.workspaceManager.getActiveProject()
+        _uiState.update {
+            it.copy(
+                currentSessionId = newSessionId,
+                sessionTitle = "New Task",
                 messages = listOf(
                     Message.Assistant(
-                        text = "Hello! I am Androgravity. I can inspect files, write code, run shell commands, and autonomously build your projects. What would you like to build?"
+                        text = "Hello! I am Androgravity. Active workspace: '${activeProj.name}'. What would you like to build?"
                     )
-                )
+                ),
+                errorMessage = null,
+                currentStep = 0,
+                pendingApproval = null
             )
         }
     }
@@ -86,7 +158,7 @@ class ChatViewModel(
             )
         }
 
-        val activeProject = app.workspaceManager.getActiveProject()
+        val activeProject = _uiState.value.activeProject ?: app.workspaceManager.getActiveProject()
         val defaultProjectDir = File(activeProject.path)
 
         val execBackend = app.getActiveExecBackend()
@@ -96,6 +168,7 @@ class ChatViewModel(
         agentJob = viewModelScope.launch {
             val runSessionId = _uiState.value.currentSessionId
             AgentForegroundService.start(app, runSessionId, userPrompt.take(40))
+            persistSessionAndMessages("RUNNING")
 
             try {
                 var activeAssistantId = UUID.randomUUID().toString()
@@ -105,9 +178,10 @@ class ChatViewModel(
                 agentLoop.run(
                     userPrompt = userPrompt,
                     workspaceRoot = defaultProjectDir,
-                    projectId = defaultProjectDir.name,
+                    projectId = activeProject.id,
                     execBackend = execBackend,
                     existingHistory = historyBeforeThis,
+                    sessionId = runSessionId,
                     model = selectedModel
                 ).collect { event ->
                     when (event) {
@@ -145,10 +219,11 @@ class ChatViewModel(
                                     pendingApproval = null
                                 )
                             }
+                            persistSessionAndMessages("RUNNING")
                         }
                         is AgentEvent.Done -> {
                             _uiState.update { it.copy(isStreaming = false, pendingApproval = null) }
-                            persistSessionAndMessages()
+                            persistSessionAndMessages("DONE")
                         }
                         is AgentEvent.Cancelled -> {
                             _uiState.update {
@@ -158,6 +233,7 @@ class ChatViewModel(
                                     messages = it.messages + Message.System(text = "Agent execution cancelled.")
                                 )
                             }
+                            persistSessionAndMessages("STOPPED")
                         }
                         is AgentEvent.Error -> {
                             _uiState.update {
@@ -167,6 +243,7 @@ class ChatViewModel(
                                     errorMessage = event.message
                                 )
                             }
+                            persistSessionAndMessages("FAILED")
                         }
                     }
                 }
@@ -245,17 +322,21 @@ class ChatViewModel(
         }
     }
 
-    private fun persistSessionAndMessages() {
+    private fun persistSessionAndMessages(status: String = "DONE") {
         viewModelScope.launch {
             try {
                 val sessionId = _uiState.value.currentSessionId
+                val activeProj = _uiState.value.activeProject ?: app.workspaceManager.getActiveProject()
+                val selectedModel = securePreferences.getString(SecurePreferences.KEY_SELECTED_MODEL, "gemini-3.7-flash") ?: "gemini-3.7-flash"
+                val title = _uiState.value.messages.firstOrNull { it is Message.User }?.let { (it as Message.User).text.take(40) } ?: "Agent Task"
+
                 val session = SessionEntity(
                     id = sessionId,
-                    projectId = "default",
-                    title = _uiState.value.messages.firstOrNull { it is Message.User }?.let { (it as Message.User).text.take(30) } ?: "Agent Task",
-                    status = "DONE",
+                    projectId = activeProj.id,
+                    title = title,
+                    status = status,
                     mode = _uiState.value.autonomyMode.name,
-                    model = "gemini-1.5-flash",
+                    model = selectedModel,
                     currentStep = _uiState.value.currentStep,
                     maxSteps = 20,
                     createdAt = System.currentTimeMillis(),

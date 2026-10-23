@@ -21,11 +21,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import android.widget.Toast
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -49,6 +53,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -161,6 +168,8 @@ fun TerminalScreen(
                     .padding(8.dp)
             ) {
                 if (currentTab != null) {
+                    val clipboardManager = LocalClipboardManager.current
+                    val context = LocalContext.current
                     val annotatedOutput = remember(currentTab.output) {
                         AnsiParser.parse(currentTab.output)
                     }
@@ -170,12 +179,37 @@ fun TerminalScreen(
                             .fillMaxSize()
                             .verticalScroll(terminalScrollState)
                     ) {
-                        Text(
-                            text = annotatedOutput,
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 12.sp,
-                            lineHeight = 16.sp
-                        )
+                        SelectionContainer {
+                            Text(
+                                text = annotatedOutput,
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 12.sp,
+                                lineHeight = 16.sp
+                            )
+                        }
+                    }
+
+                    // Floating Copy Terminal Buffer Button
+                    if (currentTab.output.isNotBlank()) {
+                        IconButton(
+                            onClick = {
+                                clipboardManager.setText(AnnotatedString(currentTab.output))
+                                Toast.makeText(context, "Terminal output copied", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(4.dp)
+                                .size(28.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color(0xFF21262D).copy(alpha = 0.8f))
+                        ) {
+                            Icon(
+                                Icons.Default.ContentCopy,
+                                contentDescription = "Copy Terminal Buffer",
+                                tint = Color(0xFF8B949E),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     }
                 } else {
                     Box(

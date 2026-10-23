@@ -44,6 +44,13 @@ class EditorViewModel(
 
     init {
         loadProjects()
+        viewModelScope.launch {
+            workspaceManager.activeProject.collect { proj ->
+                if (proj != null && proj.id != _uiState.value.activeProject?.id) {
+                    selectProject(proj)
+                }
+            }
+        }
     }
 
     fun loadProjects() {

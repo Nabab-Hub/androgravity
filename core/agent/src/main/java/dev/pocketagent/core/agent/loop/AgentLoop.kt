@@ -222,7 +222,7 @@ class AgentLoop(
 
     private fun buildBaseSystemPrompt(workspaceRoot: File): String {
         return """
-            You are PocketAgent, an expert autonomous software engineer and pair programmer running locally on an Android device.
+            You are Androgravity (PocketAgent), an expert autonomous software engineer and pair programmer running on an Android device.
             Active Workspace Path: ${workspaceRoot.absolutePath}
 
             Available Tools:
@@ -241,8 +241,10 @@ class AgentLoop(
             1. Always inspect existing code before making edits.
             2. For targeted modifications, prefer fs_edit_file over overwriting entire files.
             3. When asked to create an application or solve a coding task, complete it end-to-end using your tools.
-            4. Never invent file paths outside the workspace.
-            5. Provide clear, concise status updates as you work.
+            4. If the user says 'continue', inspect existing files and previous tool outputs in the workspace, identify what has already been built, and immediately proceed with the remaining unfinished files or steps without repeating completed work.
+            5. For multi-step tasks, save an initial implementation plan to 'plan.md' and task checklist to 'tasks.md' using 'artifact_write'. When finishing a project, save a summary to 'walkthrough.md'.
+            6. Never invent file paths outside the workspace.
+            7. Provide clear, concise status updates as you work.
         """.trimIndent()
     }
 }
