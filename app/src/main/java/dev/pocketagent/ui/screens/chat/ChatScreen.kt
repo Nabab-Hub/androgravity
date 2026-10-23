@@ -445,7 +445,7 @@ fun SurfaceInputBar(
         OutlinedTextField(
             value = inputText,
             onValueChange = onInputChange,
-            placeholder = { Text("Ask Maza Agent to plan, code, or run...") },
+            placeholder = { Text("Ask Androgravity to plan, code, or run...") },
             modifier = Modifier.weight(1f),
             maxLines = 4,
             shape = RoundedCornerShape(24.dp)

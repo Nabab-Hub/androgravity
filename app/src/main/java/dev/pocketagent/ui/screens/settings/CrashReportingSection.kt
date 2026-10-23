@@ -75,7 +75,7 @@ fun CrashReportingSection(
 
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Local-first diagnostic reporting. Maza Agent transmits zero telemetry. When enabled, exceptions are scrubbed of all credentials and paths, and saved locally on-device.",
+                text = "Local-first diagnostic reporting. Androgravity transmits zero telemetry. When enabled, exceptions are scrubbed of all credentials and paths, and saved locally on-device.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -185,7 +185,7 @@ fun CrashReportingSection(
                     onClick = {
                         val fullLog = viewModel.getExportedCrashLogs()
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        clipboard.setPrimaryClip(ClipData.newPlainText("Maza Agent Diagnostic Log", fullLog))
+                        clipboard.setPrimaryClip(ClipData.newPlainText("Androgravity Diagnostic Log", fullLog))
                         Toast.makeText(context, "Scrubbed diagnostic logs copied to clipboard", Toast.LENGTH_SHORT).show()
                     }
                 ) {

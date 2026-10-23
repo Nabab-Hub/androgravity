@@ -60,12 +60,12 @@ fun PhoneNavigationLayout() {
                     Text(
                         when (currentRoute) {
                             NavDestination.Manager.route -> "Manager"
-                            NavDestination.Chat.route -> "Maza Agent Chat"
+                            NavDestination.Chat.route -> "Androgravity Chat"
                             NavDestination.Editor.route -> "Editor"
                             NavDestination.Terminal.route -> "Terminal"
                             NavDestination.Preview.route -> "Preview"
                             NavDestination.Settings.route -> "Settings"
-                            else -> "Maza Agent"
+                            else -> "Androgravity"
                         }
                     )
                 },

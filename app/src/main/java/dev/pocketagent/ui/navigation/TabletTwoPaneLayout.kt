@@ -55,7 +55,7 @@ fun TabletTwoPaneLayout() {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        "Maza Agent",
+                        "Androgravity",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary

@@ -30,7 +30,7 @@ class CrashActivity : Activity() {
         }
 
         val headerText = TextView(this).apply {
-            text = "Maza Agent Crash Diagnostic"
+            text = "Androgravity Crash Diagnostic"
             setTextColor(Color.parseColor("#FF5252"))
             textSize = 20f
             typeface = Typeface.DEFAULT_BOLD
@@ -79,7 +79,7 @@ class CrashActivity : Activity() {
             setTextColor(Color.WHITE)
             setOnClickListener {
                 val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                val clip = ClipData.newPlainText("Maza Agent Crash Log", crashInfo)
+                val clip = ClipData.newPlainText("Androgravity Crash Log", crashInfo)
                 clipboard.setPrimaryClip(clip)
                 Toast.makeText(this@CrashActivity, "Copied to clipboard!", Toast.LENGTH_SHORT).show()
             }

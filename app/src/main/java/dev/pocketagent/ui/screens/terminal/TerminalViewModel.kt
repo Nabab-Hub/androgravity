@@ -99,7 +99,7 @@ class TerminalViewModel(
             val newTab = TerminalTab(
                 id = id,
                 title = tabTitle,
-                output = "Maza Agent Terminal ($tabTitle)\nWorkspace: ${activeProject.name} (${defaultProjectDir.absolutePath})\nShell: ${if (app.prootBackend.isProotAvailable()) "Alpine Linux (proot)" else "Android Direct Shell"}\n\n",
+                output = "Androgravity Terminal ($tabTitle)\nWorkspace: ${activeProject.name} (${defaultProjectDir.absolutePath})\nShell: ${if (app.prootBackend.isProotAvailable()) "Alpine Linux (proot)" else "Android Direct Shell"}\n\n",
                 isRunning = true
             )
             _tabs.value = _tabs.value + newTab
@@ -181,10 +181,10 @@ class TerminalViewModel(
                     currentTab.id,
                     "\u001b[1;33m[Termux / Package Manager Notice]\u001b[0m\r\n" +
                     "Android security sandbox prevents direct access to Termux private files (/data/data/com.termux/).\r\n" +
-                    "• To connect Maza Agent with your Termux packages (git, node, python, pkg):\r\n" +
+                    "• To connect Androgravity with your Termux packages (git, node, python, pkg):\r\n" +
                     "  1) In Termux, run:\r\n" +
-                    "     python <(curl -sL https://raw.githubusercontent.com/Nabab-Hub/maza-agent/main/tools/pocket-api/pocket-api.py) --port 8787\r\n" +
-                    "  2) In Maza Agent > Settings > Sandbox, select 'Remote Desktop / Cloud VM' -> Host: 127.0.0.1, Port: 8787.\r\n" +
+                    "     python <(curl -sL https://raw.githubusercontent.com/Nabab-Hub/androgravity/main/tools/pocket-api/pocket-api.py) --port 8787\r\n" +
+                    "  2) In Androgravity > Settings > Sandbox, select 'Termux Bridge / Remote PC' -> Host: 127.0.0.1, Port: 8787.\r\n" +
                     "  All agent operations will then execute directly inside your Termux environment.\r\n"
                 )
             }

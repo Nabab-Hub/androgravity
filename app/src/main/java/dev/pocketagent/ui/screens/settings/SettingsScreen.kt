@@ -101,8 +101,8 @@ fun SettingsScreen(
                 OutlinedTextField(
                     value = uiState.geminiApiKey,
                     onValueChange = { viewModel.updateGeminiApiKey(it) },
-                    label = { Text("Gemini API Key") },
-                    placeholder = { Text("AIzaSy...") },
+                    label = { Text("Gemini API Key(s)") },
+                    placeholder = { Text("Paste one or more keys (separated by commas or new lines) for auto-failover") },
                     leadingIcon = { Icon(Icons.Default.Key, contentDescription = null) },
                     trailingIcon = {
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
@@ -113,7 +113,8 @@ fun SettingsScreen(
                         }
                     },
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    singleLine = true,
+                    minLines = 1,
+                    maxLines = 3,
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -155,9 +156,10 @@ fun SettingsScreen(
                 )
 
                 val models = listOf(
-                    "gemini-1.5-flash" to "Gemini 1.5 Flash (Recommended - Ultra-fast, reliable, free quota)",
-                    "gemini-2.0-flash" to "Gemini 2.0 Flash (Next-gen frontier reasoning & multimodality)",
-                    "gemini-1.5-pro" to "Gemini 1.5 Pro (Deep complex reasoning & code architecture)",
+                    "gemini-3.5-flash" to "Gemini 3.5 Flash (Recommended - Fastest & highly reliable)",
+                    "gemini-3.5-flash-lite" to "Gemini 3.5 Flash Lite (Ultra low latency)",
+                    "gemini-3.8-flash" to "Gemini 3.8 Flash (Next-gen frontier reasoning)",
+                    "gemini-3.7-flash" to "Gemini 3.7 Flash (Hybrid reasoning)",
                     "gpt-4o-mini" to "ChatGPT GPT-4o Mini (Requires paid credits on platform.openai.com)"
                 )
 

@@ -1,10 +1,10 @@
-# Maza Agent — User Manual & Operating Guide
+# Androgravity — User Manual & Operating Guide
 
 <p align="center">
-  <img src="images/logo.png" width="160" height="160" alt="Maza Agent Logo" />
+  <img src="images/logo.png" width="160" height="160" alt="Androgravity Logo" />
 </p>
 
-Welcome to **Maza Agent**, the autonomous mobile AI coding assistant for Android. Maza Agent brings the full power of an autonomous software engineering agent — planning, writing code, executing terminal commands, testing in a real browser, and managing complex projects — directly onto your phone or tablet.
+Welcome to **Androgravity**, the autonomous mobile AI coding assistant for Android. Androgravity brings the full power of an autonomous software engineering agent — planning, writing code, executing terminal commands, testing in a real browser, and managing complex projects — directly onto your phone or tablet.
 
 ---
 
@@ -37,7 +37,7 @@ Welcome to **Maza Agent**, the autonomous mobile AI coding assistant for Android
 
 ### 1.2 Initializing the Linux Userland
 1. Switch to the **Terminal** tab.
-2. If this is a fresh install, tap **Initialize Alpine Linux**. Maza Agent will download and unpack the minirootfs into private storage.
+2. If this is a fresh install, tap **Initialize Alpine Linux**. Androgravity will download and unpack the minirootfs into private storage.
 3. Install standard packages by running:
    ```bash
    apk update && apk add git nodejs npm python3 ripgrep
@@ -47,7 +47,7 @@ Welcome to **Maza Agent**, the autonomous mobile AI coding assistant for Android
 
 ## 2. Interface Overview
 
-Maza Agent dynamically adapts its layout depending on your device form factor:
+Androgravity dynamically adapts its layout depending on your device form factor:
 
 - **Phone (Portrait)**: Clean bottom navigation bar with 5 primary screens:
   - 💬 **Chat**: Prompt the agent and monitor live reasoning.
@@ -68,7 +68,7 @@ Simply type what you want to build in natural language into the chat bar:
 > *"Create a responsive Todo web application with localStorage persistence and dark mode styling. Start the dev server and verify it in the browser."*
 
 ### What Happens Behind the Scenes:
-1. **Context Building**: Maza Agent scans the active workspace, reads `.agent/skills` and `AGENTS.md` rules.
+1. **Context Building**: Androgravity scans the active workspace, reads `.agent/skills` and `AGENTS.md` rules.
 2. **Planning**: The agent produces an implementation plan (`plan.md`).
 3. **Execution**:
    - Creates HTML, CSS, JavaScript, or backend files.
@@ -97,7 +97,7 @@ Tapping any session opens the **Session Detail View** with 6 tabs:
 
 ## 5. Monaco Code Editor & File Explorer
 
-Maza Agent embeds the Microsoft Monaco Editor (the editor core powering VS Code):
+Androgravity embeds the Microsoft Monaco Editor (the editor core powering VS Code):
 - **Full Syntax Highlighting**: JavaScript, TypeScript, Python, HTML, CSS, JSON, Kotlin, Rust, Go, Markdown, and more.
 - **File Explorer**: Browse folders, create files, rename, delete, and search across thousands of files instantly.
 - **Diff Editor**: Side-by-side or inline view comparing working directory changes against git `HEAD`.
@@ -107,7 +107,7 @@ Maza Agent embeds the Microsoft Monaco Editor (the editor core powering VS Code)
 
 ## 6. Embedded Alpine Linux Terminal
 
-Maza Agent includes a complete, unprivileged Linux userland powered by PRoot:
+Androgravity includes a complete, unprivileged Linux userland powered by PRoot:
 - **Real Package Manager**: Run `apk add <pkg>` to install compilers, runtimes, and tools.
 - **PTY Terminal Emulator**: Full color VT100 / xterm support with ANSI formatting.
 - **Extra-Keys Row**: Quick touch access to `ESC`, `TAB`, `CTRL`, `ALT`, `PIPE (|)`, `~`, `/`, `-`, and arrow keys.
@@ -117,7 +117,7 @@ Maza Agent includes a complete, unprivileged Linux userland powered by PRoot:
 
 ## 7. In-App Preview Browser & Testing
 
-Inspect and interact with your web apps without leaving Maza Agent:
+Inspect and interact with your web apps without leaving Androgravity:
 - **Port Selector**: Fast one-tap switching between `:3000`, `:5173`, `:8080`, or custom ports.
 - **Device Frame Toggle**: Test how your web app looks on phone screen vs tablet viewport.
 - **Collapsible Console**: Live JavaScript `console.log`, warnings, and runtime errors stream into a collapsible bottom tray.
@@ -136,7 +136,7 @@ You maintain complete control over what the agent is allowed to do. Select an Au
 | **Always Proceed** | Full autonomy for trusted autonomous builds. |
 
 ### Strict Hardcoded Deny List
-Regardless of autonomy settings, Maza Agent's `PolicyEngine` strictly forbids high-risk operations:
+Regardless of autonomy settings, Androgravity's `PolicyEngine` strictly forbids high-risk operations:
 - ❌ Recursive root deletions (`rm -rf /`, `rm -rf ~`)
 - ❌ Raw disk or device writes (`dd if=... of=/dev/...`, `mkfs`)
 - ❌ Accessing parent escapes outside workspace (`../../`)
@@ -146,7 +146,7 @@ Regardless of autonomy settings, Maza Agent's `PolicyEngine` strictly forbids hi
 
 ## 9. Model Context Protocol (MCP) Integration
 
-Maza Agent supports the open Model Context Protocol (MCP) specification:
+Androgravity supports the open Model Context Protocol (MCP) specification:
 - Connect to HTTP/SSE and stdio tool servers.
 - Configure servers under **Settings $\to$ MCP Tool Servers**.
 - Toggle per-server autonomy policies (`Auto-approve`, `Ask`, `Disabled`).
@@ -155,7 +155,7 @@ Maza Agent supports the open Model Context Protocol (MCP) specification:
 
 ## 10. Background Survival & Battery Setup
 
-Modern Android OS versions aggressively terminate background apps. Maza Agent implements multiple safeguards to keep your builds running:
+Modern Android OS versions aggressively terminate background apps. Androgravity implements multiple safeguards to keep your builds running:
 
 1. **Foreground Service & WakeLock**:
    - Keeps CPU awake while the agent is running a task.
@@ -178,7 +178,7 @@ When developing massive monorepos or resource-heavy projects that exceed mobile 
    ```bash
    python3 tools/pocket-api/pocket-api.py --port 8787 --token mysecret --workspace ~/projects
    ```
-2. In Maza Agent **Settings $\to$ Execution Sandbox Mode**, select **Remote Desktop / Cloud VM**.
+2. In Androgravity **Settings $\to$ Execution Sandbox Mode**, select **Remote Desktop / Cloud VM**.
 3. Enter your PC's IP or Tailscale domain and token.
 4. Tap **Test Remote Daemon Connection** $\to$ **Save Settings**.
 5. All builds and commands will now execute with the raw speed of your desktop, while you control everything from your phone!
@@ -199,10 +199,10 @@ Jumpstart new projects with built-in templates:
 ## 13. Troubleshooting & FAQ
 
 **Q: Why did my npm install stop when I locked the screen?**  
-A: Ensure Maza Agent is exempted from Android Battery Optimization (Doze Mode). Tap **Request Exemption** in the Background Guide screen.
+A: Ensure Androgravity is exempted from Android Battery Optimization (Doze Mode). Tap **Request Exemption** in the Background Guide screen.
 
 **Q: Are my API keys safe?**  
 A: Yes. All API keys and auth tokens are stored using Android's hardware-backed `EncryptedSharedPreferences`. They are never logged, exported in crash dumps, or written to workspace files.
 
-**Q: Can Maza Agent work offline?**  
+**Q: Can Androgravity work offline?**  
 A: The Monaco editor, Alpine Linux terminal, and file manager work 100% offline. The AI agent loop requires network connectivity to communicate with your chosen model provider (or a local Ollama server in Remote Mode).

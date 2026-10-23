@@ -94,7 +94,7 @@ class AgentForegroundService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "Maza Agent Background Execution",
+                "Androgravity Background Execution",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
                 description = "Keeps agent execution and terminal processes active in background"

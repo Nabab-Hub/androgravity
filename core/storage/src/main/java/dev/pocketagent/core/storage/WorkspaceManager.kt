@@ -102,7 +102,7 @@ class WorkspaceManager(private val context: Context) {
 
         val readme = File(canonicalDir, "README.md")
         if (!readme.exists()) {
-            readme.writeText("# ${canonicalDir.name}\n\nCreated with Maza Agent.")
+            readme.writeText("# ${canonicalDir.name}\n\nCreated with Androgravity.")
         }
 
         return Project(
@@ -124,7 +124,7 @@ class WorkspaceManager(private val context: Context) {
 
         // Create a default README.md
         val readme = File(targetDir, "README.md")
-        readme.writeText("# ${targetDir.name}\n\nCreated with Maza Agent.")
+        readme.writeText("# ${targetDir.name}\n\nCreated with Androgravity.")
 
         if (parentDir != null && parentDir != workspacesRoot) {
             val current = loadExternalPaths().toMutableSet()

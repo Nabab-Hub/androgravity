@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="docs/images/logo.png" width="160" height="160" alt="Maza Agent Logo" />
+  <img src="docs/images/logo.png" width="160" height="160" alt="Androgravity Logo" />
 </p>
 
-<h1 align="center">Maza Agent</h1>
+<h1 align="center">Androgravity</h1>
 
 <p align="center">
   <strong>Autonomous Mobile AI Coding Assistant for Android</strong><br>
@@ -20,11 +20,11 @@
 
 ---
 
-## 🌟 What is Maza Agent?
+## 🌟 What is Androgravity?
 
-**Maza Agent** is a full-featured, local-first autonomous coding environment for Android. It mirrors the developer experience of Google Antigravity and modern desktop AI IDEs, optimized specifically for mobile form factors, touch keyboards, and battery survival.
+**Androgravity** is a full-featured, local-first autonomous coding environment for Android. It mirrors the developer experience of Google Antigravity and modern desktop AI IDEs, optimized specifically for mobile form factors, touch keyboards, and battery survival.
 
-Describe what you want to build $\to$ Maza Agent outlines the architectural plan $\to$ writes the code $\to$ runs builds in an embedded Linux terminal $\to$ tests in a real in-app browser $\to$ and reports back with rich visual artifacts.
+Describe what you want to build $\to$ Androgravity outlines the architectural plan $\to$ writes the code $\to$ runs builds in an embedded Linux terminal $\to$ tests in a real in-app browser $\to$ and reports back with rich visual artifacts.
 
 ---
 
@@ -97,17 +97,17 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 ### 3. Setup on Phone
 
-1. Open **Maza Agent**.
-2. Go to **Settings** $\to$ Enter your Gemini, Claude, or OpenAI API key $\to$ Tap **Save Settings**.
+1. Open **Androgravity**.
+2. Go to **Settings** $\to$ Enter your Gemini or OpenAI API key $\to$ Tap **Save Settings**.
 3. Open **Terminal** $\to$ Initialize Alpine Linux $\to$ Run `apk add nodejs git python3`.
-4. Switch to **Chat** and tell Maza Agent what to build!
+4. Switch to **Chat** and tell Androgravity what to build!
 
 ---
 
 ## 📖 Documentation
 
 - 📘 **[User Manual](docs/USER_MANUAL.md)**: Comprehensive guide on all screens, shortcuts, and workflows.
-- 🌐 **[Remote Mode Setup](docs/REMOTE_MODE_SETUP.md)**: How to connect to a desktop PC or cloud VM.
+- 🌐 **[Remote Mode Setup](docs/REMOTE_MODE_SETUP.md)**: How to connect to a desktop PC, cloud VM, or Termux.
 - 📦 **[Release & Signing Guide](docs/RELEASE_GUIDE.md)**: Play Store and F-Droid compilation details.
 - 📜 **[Third-Party Licenses](THIRD_PARTY_NOTICES.md)**: Open-source attributions and notices.
 
@@ -123,4 +123,4 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 ## 📄 License
 
-Maza Agent is licensed under the [Apache License 2.0](LICENSE). Bundled subcomponents are subject to their respective licenses detailed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Androgravity is licensed under the [Apache License 2.0](LICENSE). Bundled subcomponents are subject to their respective licenses detailed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

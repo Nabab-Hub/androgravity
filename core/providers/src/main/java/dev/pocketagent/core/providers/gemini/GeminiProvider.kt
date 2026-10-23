@@ -54,20 +54,67 @@ class GeminiProvider(
         isLenient = true
     }
 
+    private val activeKeyIndex = java.util.concurrent.atomic.AtomicInteger(0)
+
+    enum class StreamResult {
+        SUCCESS,
+        RETRY_NEXT_KEY,
+        FALLBACK_MODEL,
+        FATAL_ERROR
+    }
+
     override fun stream(request: ChatRequest): Flow<ChatEvent> = flow {
-        val apiKey = apiKeyProvider()
-        if (apiKey.isBlank()) {
-            emit(ChatEvent.Error("Gemini API key is not configured. Please add it in Settings."))
+        val rawKeys = apiKeyProvider()
+        val allKeys = parseKeys(rawKeys)
+        if (allKeys.isEmpty()) {
+            emit(ChatEvent.Error("Gemini API key is not configured. Please add one or more keys in Settings."))
             return@flow
         }
 
         val effectiveModel = resolveGeminiModel(request.model)
         val requestBody = buildGeminiRequestBody(request)
 
-        val success = tryExecuteModelStream(effectiveModel, apiKey, requestBody, this)
-        if (!success && effectiveModel != FALLBACK_MODEL) {
-            emit(ChatEvent.TextDelta("*(Gemini model '$effectiveModel' was temporarily unavailable. Automatically fell back to $FALLBACK_MODEL)*\n\n"))
-            tryExecuteModelStream(FALLBACK_MODEL, apiKey, requestBody, this)
+        var finished = false
+        val totalKeys = allKeys.size
+        val startIndex = (activeKeyIndex.get() % totalKeys + totalKeys) % totalKeys
+
+        for (offset in 0 until totalKeys) {
+            val keyIndex = (startIndex + offset) % totalKeys
+            val currentKey = allKeys[keyIndex]
+
+            var result = tryExecuteModelStream(effectiveModel, currentKey, requestBody, this)
+
+            if (result == StreamResult.FALLBACK_MODEL && effectiveModel != FALLBACK_MODEL) {
+                emit(ChatEvent.TextDelta("*(Gemini model '$effectiveModel' unavailable/overloaded. Auto-routing to $FALLBACK_MODEL)*\n\n"))
+                result = tryExecuteModelStream(FALLBACK_MODEL, currentKey, requestBody, this)
+            }
+
+            when (result) {
+                StreamResult.SUCCESS -> {
+                    activeKeyIndex.set(keyIndex)
+                    finished = true
+                    break
+                }
+                StreamResult.RETRY_NEXT_KEY -> {
+                    if (totalKeys > 1 && offset < totalKeys - 1) {
+                        val nextIdx = (keyIndex + 1) % totalKeys + 1
+                        emit(ChatEvent.TextDelta("*(Gemini Key ${keyIndex + 1} exhausted or restricted. Auto-switching to Key $nextIdx of $totalKeys...)*\n\n"))
+                    }
+                    continue
+                }
+                StreamResult.FALLBACK_MODEL -> {
+                    // Try next key with fallback model
+                    continue
+                }
+                StreamResult.FATAL_ERROR -> {
+                    finished = true
+                    break
+                }
+            }
+        }
+
+        if (!finished) {
+            emit(ChatEvent.Error("All configured Gemini API keys (${allKeys.size}) failed or exhausted their quota. Please check your keys or add more in Settings."))
         }
     }
 
@@ -76,7 +123,7 @@ class GeminiProvider(
         apiKey: String,
         requestBody: JsonObject,
         collector: kotlinx.coroutines.flow.FlowCollector<ChatEvent>
-    ): Boolean {
+    ): StreamResult {
         val url = "https://generativelanguage.googleapis.com/v1beta/models/$modelName:streamGenerateContent?alt=sse&key=$apiKey"
 
         val response = try {
@@ -87,29 +134,24 @@ class GeminiProvider(
                 setBody(requestBody.toString())
             }
         } catch (e: Exception) {
-            if (modelName != FALLBACK_MODEL) {
-                // Return false to allow fallback attempt
-                return false
-            }
-            collector.emit(ChatEvent.Error("Gemini connection error (${e.javaClass.simpleName}): ${e.message}", e))
-            return true
+            return StreamResult.FALLBACK_MODEL
         }
 
         if (response.status.value !in 200..299) {
-            if (modelName != FALLBACK_MODEL && response.status.value in listOf(503, 404, 500)) {
-                // High demand / model not found, fallback to reliable 1.5 flash
-                return false
+            val status = response.status.value
+            if (status == 429 || status == 403) {
+                // Key quota exhausted or permission denied on this key -> switch to next key
+                return StreamResult.RETRY_NEXT_KEY
+            }
+
+            if (status in listOf(503, 404, 500)) {
+                // Model overloaded or not found -> fallback model
+                return StreamResult.FALLBACK_MODEL
             }
 
             val errorBody: String = try { response.body() } catch (_: Exception) { "" }
-            val hint = when (response.status.value) {
-                403 -> "\n\nHint: Permission Denied. Your Google Cloud project or key is restricted. Please create a fresh API key at https://aistudio.google.com/app/apikey (choose default project) and save it in Settings."
-                404 -> "\n\nHint: Model '$modelName' was not found on Google's API endpoint. Use Gemini 1.5 Flash in Settings."
-                503 -> "\n\nHint: Model is currently overloaded on Google's servers. Please try again or switch to Gemini 1.5 Flash."
-                else -> ""
-            }
-            collector.emit(ChatEvent.Error("Gemini API returned status ${response.status.value}: $errorBody$hint"))
-            return true
+            collector.emit(ChatEvent.Error("Gemini API returned status $status: $errorBody"))
+            return StreamResult.FATAL_ERROR
         }
 
         try {
@@ -169,13 +211,9 @@ class GeminiProvider(
             }
 
             collector.emit(ChatEvent.Done())
-            return true
+            return StreamResult.SUCCESS
         } catch (e: Exception) {
-            if (modelName != FALLBACK_MODEL) {
-                return false
-            }
-            collector.emit(ChatEvent.Error(e.message ?: "Unknown network error", e))
-            return true
+            return StreamResult.FALLBACK_MODEL
         }
     }
 
@@ -279,18 +317,24 @@ class GeminiProvider(
     }
 
     companion object {
-        const val DEFAULT_MODEL = "gemini-1.5-flash"
-        const val FALLBACK_MODEL = "gemini-1.5-flash"
+        const val DEFAULT_MODEL = "gemini-3.5-flash"
+        const val FALLBACK_MODEL = "gemini-3.5-flash"
+
+        fun parseKeys(raw: String): List<String> {
+            return raw.split(Regex("[,;\\r?\\n]+"))
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+        }
 
         fun resolveGeminiModel(model: String): String {
             val clean = model.trim().removePrefix("models/")
             return when {
                 clean.isBlank() -> DEFAULT_MODEL
-                clean == "gemini-1.5-flash" -> "gemini-1.5-flash"
-                clean == "gemini-1.5-pro" -> "gemini-1.5-pro"
-                clean == "gemini-2.0-flash" -> "gemini-2.0-flash"
-                clean == "gemini-2.0-flash-exp" -> "gemini-2.0-flash"
-                clean.contains("3.7") || clean.contains("3.8") || clean.contains("2.5") -> DEFAULT_MODEL
+                clean == "gemini-3.5-flash" -> "gemini-3.5-flash"
+                clean == "gemini-3.5-flash-lite" -> "gemini-3.5-flash-lite"
+                clean == "gemini-3.8-flash" -> "gemini-3.8-flash"
+                clean == "gemini-3.7-flash" -> "gemini-3.7-flash"
+                clean.startsWith("gemini-1.") || clean.startsWith("gemini-2.") -> DEFAULT_MODEL
                 else -> clean
             }
         }

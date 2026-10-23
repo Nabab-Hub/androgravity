@@ -58,7 +58,7 @@ class ChatViewModel(
                 autonomyMode = policyEngine.autonomyMode,
                 messages = listOf(
                     Message.Assistant(
-                        text = "Hello! I am Maza Agent. I can inspect files, write code, run shell commands, and autonomously build your projects. What would you like to build?"
+                        text = "Hello! I am Androgravity. I can inspect files, write code, run shell commands, and autonomously build your projects. What would you like to build?"
                     )
                 )
             )
