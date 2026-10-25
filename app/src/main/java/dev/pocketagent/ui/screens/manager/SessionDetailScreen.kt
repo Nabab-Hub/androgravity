@@ -71,8 +71,9 @@ fun SessionDetailScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            val safeTab = state.activeTab.coerceIn(0, (tabs.size - 1).coerceAtLeast(0))
             ScrollableTabRow(
-                selectedTabIndex = state.activeTab,
+                selectedTabIndex = safeTab,
                 edgePadding = 12.dp,
                 modifier = Modifier.fillMaxWidth()
             ) {

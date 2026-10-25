@@ -263,13 +263,15 @@ fun EditorScreen(
 
             // Open Files Tab Row
             if (uiState.openTabs.isNotEmpty()) {
+                val rawIndex = uiState.openTabs.indexOf(uiState.activeTab)
+                val safeTabIndex = if (rawIndex in uiState.openTabs.indices) rawIndex else 0
                 ScrollableTabRow(
-                    selectedTabIndex = uiState.openTabs.indexOf(uiState.activeTab).coerceAtLeast(0),
+                    selectedTabIndex = safeTabIndex,
                     modifier = Modifier.fillMaxWidth(),
                     edgePadding = 8.dp
                 ) {
-                    uiState.openTabs.forEach { tabPath ->
-                        val isSelected = tabPath == uiState.activeTab
+                    uiState.openTabs.forEachIndexed { index, tabPath ->
+                        val isSelected = index == safeTabIndex
                         Tab(
                             selected = isSelected,
                             onClick = { viewModel.openFile(tabPath) },
