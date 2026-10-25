@@ -73,7 +73,7 @@ class AgentForegroundService : Service() {
             val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
             wakeLock = pm.newWakeLock(
                 PowerManager.PARTIAL_WAKE_LOCK,
-                "MazaAgent:AgentExecutionWakeLock"
+                "Androgravity:AgentExecutionWakeLock"
             ).apply {
                 setReferenceCounted(false)
                 acquire(60 * 60 * 1000L) // 1 hour safety timeout

@@ -52,7 +52,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.vars.outputs.tag }}
-          name: "Maza Agent ${{ steps.vars.outputs.tag }}"
+          name: "Androgravity ${{ steps.vars.outputs.tag }}"
           draft: false
           prerelease: false
           generate_release_notes: true

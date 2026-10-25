@@ -20,7 +20,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
         } catch (t: Throwable) {
-            android.util.Log.e("MazaAgent", "Error during MainActivity.onCreate", t)
+            android.util.Log.e("Androgravity", "Error during MainActivity.onCreate", t)
             val intent = android.content.Intent(this, CrashActivity::class.java).apply {
                 putExtra(CrashActivity.EXTRA_CRASH_INFO, android.util.Log.getStackTraceString(t))
             }

@@ -83,6 +83,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.pocketagent.core.agent.policy.AutonomyMode
 import dev.pocketagent.core.model.Message
 import dev.pocketagent.core.model.ToolCall
+import dev.pocketagent.ui.components.MarkdownViewer
 import dev.pocketagent.ui.viewmodel.ChatViewModel
 import dev.pocketagent.ui.viewmodel.PendingApproval
 
@@ -698,13 +699,10 @@ fun MessageItem(message: Message) {
                             color = MaterialTheme.colorScheme.surfaceVariant
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
-                                SelectionContainer {
-                                    Text(
-                                        text = message.text,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                }
+                                MarkdownViewer(
+                                    markdown = message.text,
+                                    textColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),

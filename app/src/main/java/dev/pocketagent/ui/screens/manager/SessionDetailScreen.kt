@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.pocketagent.core.model.SessionStatus
+import dev.pocketagent.ui.components.MarkdownViewer
 import dev.pocketagent.ui.screens.chat.ChatScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -75,7 +77,14 @@ fun SessionDetailScreen(
             ScrollableTabRow(
                 selectedTabIndex = safeTab,
                 edgePadding = 12.dp,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                indicator = { tabPositions ->
+                    if (safeTab in tabPositions.indices) {
+                        TabRowDefaults.SecondaryIndicator(
+                            Modifier.tabIndicatorOffset(tabPositions[safeTab])
+                        )
+                    }
+                }
             ) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
@@ -156,11 +165,9 @@ fun PlanTab(planText: String?) {
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
-            Text(
-                text = planText,
-                style = MaterialTheme.typography.bodyMedium,
-                fontFamily = FontFamily.Monospace,
-                lineHeight = 22.sp
+            MarkdownViewer(
+                markdown = planText,
+                textColor = MaterialTheme.colorScheme.onSurface
             )
         }
     }
@@ -229,11 +236,9 @@ fun WalkthroughTab(walkthroughText: String?) {
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
-            Text(
-                text = walkthroughText,
-                style = MaterialTheme.typography.bodyMedium,
-                fontFamily = FontFamily.Monospace,
-                lineHeight = 22.sp
+            MarkdownViewer(
+                markdown = walkthroughText,
+                textColor = MaterialTheme.colorScheme.onSurface
             )
         }
     }

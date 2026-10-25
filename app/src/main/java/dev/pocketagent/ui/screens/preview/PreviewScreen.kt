@@ -140,7 +140,7 @@ fun PreviewScreen(
                         }
                     }
 
-                    // Quick Port Selector Chips
+                    // Quick Port Selector Chips & Workspace Preview
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -149,6 +149,13 @@ fun PreviewScreen(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        FilterChip(
+                            selected = state.urlInput.startsWith("file://") && state.urlInput.endsWith(".html"),
+                            onClick = { viewModel.openWorkspaceIndex() },
+                            label = { Text("📁 index.html", fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
+                            modifier = Modifier.height(28.dp)
+                        )
+                        VerticalDivider(modifier = Modifier.height(16.dp))
                         Text("Ports:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         listOf(3000, 5173, 8080, 8000, 4321, 4200).forEach { port ->
                             FilterChip(

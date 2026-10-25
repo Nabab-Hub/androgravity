@@ -40,9 +40,23 @@ class TerminalViewModel(
     private val listenerJobs = mutableMapOf<String, Job>()
 
     init {
-        // If Linux is installed or ready, open initial shell
-        if (linuxManager.isInstalled()) {
-            openNewTab()
+        openNewTab()
+
+        // Sync terminal working directory whenever active project changes
+        viewModelScope.launch {
+            app.workspaceManager.activeProject.collect { proj ->
+                if (proj != null) {
+                    val tabs = _tabs.value
+                    val index = _activeTabIndex.value
+                    if (index in tabs.indices) {
+                        val tab = tabs[index]
+                        appendOutput(tab.id, "\r\n\u001b[1;36m[Workspace switched to: ${proj.name}]\u001b[0m\r\n")
+                        sessions[tab.id]?.let { s ->
+                            try { s.write("cd \"${proj.path}\"\n") } catch (_: Throwable) {}
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -63,6 +77,30 @@ class TerminalViewModel(
 
             val activeProject = app.workspaceManager.getActiveProject()
             val defaultProjectDir = File(activeProject.path)
+            val activeBackend = app.getActiveExecBackend()
+
+            val isRemote = activeBackend is dev.pocketagent.core.sandbox.RemoteExecBackend
+            val backendName = when {
+                isRemote -> "Termux Bridge / Remote Daemon"
+                app.prootBackend.isProotAvailable() -> "Alpine Linux (proot)"
+                else -> "Android Direct Shell"
+            }
+
+            if (isRemote) {
+                val newTab = TerminalTab(
+                    id = id,
+                    title = tabTitle,
+                    output = "\u001b[1;32m=== Androgravity Terminal ($tabTitle) ===\u001b[0m\r\n" +
+                            "Workspace: \u001b[1;34m${activeProject.name}\u001b[0m (${defaultProjectDir.absolutePath})\r\n" +
+                            "Environment: \u001b[1;33m$backendName\u001b[0m\r\n" +
+                            "Packages: \u001b[32mFull Termux Environment (python3, node, git, npm, pkg)\u001b[0m\r\n\r\n" +
+                            "\u001b[1;34m${activeProject.name}\u001b[0m $ ",
+                    isRunning = true
+                )
+                _tabs.value = _tabs.value + newTab
+                _activeTabIndex.value = _tabs.value.lastIndex
+                return@launch
+            }
 
             val session = try {
                 if (app.prootBackend.isProotAvailable()) {
@@ -99,7 +137,7 @@ class TerminalViewModel(
             val newTab = TerminalTab(
                 id = id,
                 title = tabTitle,
-                output = "Androgravity Terminal ($tabTitle)\nWorkspace: ${activeProject.name} (${defaultProjectDir.absolutePath})\nShell: ${if (app.prootBackend.isProotAvailable()) "Alpine Linux (proot)" else "Android Direct Shell"}\n\n",
+                output = "Androgravity Terminal ($tabTitle)\nWorkspace: ${activeProject.name} (${defaultProjectDir.absolutePath})\nShell: $backendName\n\n",
                 isRunning = true
             )
             _tabs.value = _tabs.value + newTab
@@ -172,11 +210,14 @@ class TerminalViewModel(
         val currentTab = currentTabs[index]
         val session = sessions[currentTab.id]
 
+        val activeBackend = app.getActiveExecBackend()
+        val isRemote = activeBackend is dev.pocketagent.core.sandbox.RemoteExecBackend
+
         if (echo) {
             val trimmed = text.trimEnd('\r', '\n')
             appendOutput(currentTab.id, "\u001b[1;32m$ $trimmed\u001b[0m\r\n")
 
-            if ((trimmed.startsWith("apk") || trimmed.startsWith("pkg") || trimmed.startsWith("apt")) && !app.prootBackend.isProotAvailable()) {
+            if ((trimmed.startsWith("apk") || trimmed.startsWith("pkg") || trimmed.startsWith("apt")) && !app.prootBackend.isProotAvailable() && !isRemote) {
                 appendOutput(
                     currentTab.id,
                     "\u001b[1;33m[Termux / Package Manager Notice]\u001b[0m\r\n" +
@@ -185,9 +226,31 @@ class TerminalViewModel(
                     "  1) In Termux, run:\r\n" +
                     "     python <(curl -sL https://raw.githubusercontent.com/Nabab-Hub/androgravity/main/tools/pocket-api/pocket-api.py) --port 8787\r\n" +
                     "  2) In Androgravity > Settings > Sandbox, select 'Termux Bridge / Remote PC' -> Host: 127.0.0.1, Port: 8787.\r\n" +
-                    "  All agent operations will then execute directly inside your Termux environment.\r\n"
+                    "  All terminal and agent operations will then execute directly inside your Termux environment.\r\n"
                 )
             }
+        }
+
+        if (isRemote) {
+            val command = text.trim()
+            if (command.isNotBlank()) {
+                viewModelScope.launch(Dispatchers.IO) {
+                    try {
+                        val activeProject = app.workspaceManager.getActiveProject()
+                        val result = activeBackend.exec(
+                            cmd = listOf("sh", "-c", command),
+                            cwd = activeProject.path
+                        )
+                        if (result.stdout.isNotBlank()) {
+                            appendOutput(currentTab.id, "${result.stdout}\r\n")
+                        }
+                        appendOutput(currentTab.id, "\u001b[1;34m${activeProject.name}\u001b[0m $ ")
+                    } catch (t: Throwable) {
+                        appendOutput(currentTab.id, "\u001b[1;31m[Termux Bridge Error: ${t.message}]\u001b[0m\r\n")
+                    }
+                }
+            }
+            return
         }
 
         if (session != null) {

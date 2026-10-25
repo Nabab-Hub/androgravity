@@ -100,10 +100,12 @@ class SettingsViewModel(
     }
 
     fun updateExecBackendType(type: ExecBackendType) {
+        securePreferences.setExecBackendType(type)
         _uiState.update { it.copy(execBackendType = type, isSavedSuccess = false) }
     }
 
     fun updateRemoteConfig(config: RemoteConfig) {
+        securePreferences.saveRemoteConfig(config)
         _uiState.update { it.copy(remoteConfig = config, isSavedSuccess = false) }
     }
 
@@ -126,6 +128,10 @@ class SettingsViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isTestingRemote = true, remoteStatus = null) }
             val status = app.remoteExecBackend.ping()
+            if (status.isOnline) {
+                securePreferences.setExecBackendType(ExecBackendType.REMOTE)
+                _uiState.update { it.copy(execBackendType = ExecBackendType.REMOTE) }
+            }
             _uiState.update { it.copy(isTestingRemote = false, remoteStatus = status) }
         }
     }

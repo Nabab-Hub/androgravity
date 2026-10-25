@@ -61,6 +61,8 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDrawerState
@@ -268,7 +270,14 @@ fun EditorScreen(
                 ScrollableTabRow(
                     selectedTabIndex = safeTabIndex,
                     modifier = Modifier.fillMaxWidth(),
-                    edgePadding = 8.dp
+                    edgePadding = 8.dp,
+                    indicator = { tabPositions ->
+                        if (safeTabIndex in tabPositions.indices) {
+                            TabRowDefaults.SecondaryIndicator(
+                                Modifier.tabIndicatorOffset(tabPositions[safeTabIndex])
+                            )
+                        }
+                    }
                 ) {
                     uiState.openTabs.forEachIndexed { index, tabPath ->
                         val isSelected = index == safeTabIndex

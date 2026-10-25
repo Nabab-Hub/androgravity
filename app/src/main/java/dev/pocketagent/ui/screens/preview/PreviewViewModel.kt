@@ -117,6 +117,30 @@ class PreviewViewModel(
         }
     }
 
+    fun openWorkspaceIndex() {
+        val activeProj = PocketAgentApp.instance.workspaceManager.getActiveProject()
+        val projDir = File(activeProj.path)
+        val indexFile = File(projDir, "index.html")
+        if (indexFile.exists()) {
+            val target = "file://${indexFile.absolutePath}"
+            _urlInput.value = target
+            viewModelScope.launch {
+                browserController.openUrl(target)
+            }
+        } else {
+            val anyHtml = projDir.listFiles { file -> file.extension.equals("html", ignoreCase = true) }?.firstOrNull()
+            if (anyHtml != null) {
+                val target = "file://${anyHtml.absolutePath}"
+                _urlInput.value = target
+                viewModelScope.launch {
+                    browserController.openUrl(target)
+                }
+            } else {
+                _notificationMessage.value = "No index.html found in workspace: ${activeProj.name}"
+            }
+        }
+    }
+
     fun toggleDeviceFrame() {
         _deviceFrameMode.value = when (_deviceFrameMode.value) {
             DeviceFrameMode.RESPONSIVE -> DeviceFrameMode.PHONE

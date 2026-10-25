@@ -51,7 +51,7 @@ class PocketAgentApp : Application() {
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             try {
-                android.util.Log.e("MazaAgent", "FATAL UNCAUGHT EXCEPTION", throwable)
+                android.util.Log.e("Androgravity", "FATAL UNCAUGHT EXCEPTION", throwable)
                 val stackTrace = android.util.Log.getStackTraceString(throwable)
                 val intent = android.content.Intent(this, CrashActivity::class.java).apply {
                     flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -68,7 +68,7 @@ class PocketAgentApp : Application() {
         try {
             securePreferences = SecurePreferences(this)
         } catch (e: Throwable) {
-            android.util.Log.e("MazaAgent", "Failed to init SecurePreferences", e)
+            android.util.Log.e("Androgravity", "Failed to init SecurePreferences", e)
         }
 
         try {
@@ -77,13 +77,13 @@ class PocketAgentApp : Application() {
                 securePreferences = securePreferences
             )
         } catch (e: Throwable) {
-            android.util.Log.e("MazaAgent", "Failed to init CrashReportManager", e)
+            android.util.Log.e("Androgravity", "Failed to init CrashReportManager", e)
         }
 
         try {
             database = AppDatabase.getInstance(this)
         } catch (e: Throwable) {
-            android.util.Log.e("MazaAgent", "Failed to init AppDatabase, falling back to memory db", e)
+            android.util.Log.e("Androgravity", "Failed to init AppDatabase, falling back to memory db", e)
             database = androidx.room.Room.inMemoryDatabaseBuilder(this, AppDatabase::class.java).build()
         }
 
@@ -125,7 +125,7 @@ class PocketAgentApp : Application() {
                 directBackend = directBackend
             )
         } catch (e: Throwable) {
-            android.util.Log.e("MazaAgent", "Failed to init ProotBackend", e)
+            android.util.Log.e("Androgravity", "Failed to init ProotBackend", e)
             dev.pocketagent.core.sandbox.ProotBackend(this, cacheDir, cacheDir, directBackend)
         }
 
@@ -142,7 +142,7 @@ class PocketAgentApp : Application() {
                 execBackend = prootBackend
             )
         } catch (e: Throwable) {
-            android.util.Log.e("MazaAgent", "Failed to init McpManager", e)
+            android.util.Log.e("Androgravity", "Failed to init McpManager", e)
         }
 
         agentLoop = dev.pocketagent.core.agent.loop.AgentLoop(
