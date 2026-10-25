@@ -20,6 +20,7 @@ data class SettingsUiState(
     val geminiApiKey: String = "",
     val anthropicApiKey: String = "",
     val openaiApiKey: String = "",
+    val groqApiKey: String = "",
     val selectedModel: String = "gemini-3.5-flash",
     val autonomyMode: AutonomyMode = AutonomyMode.AGENT_DECIDES,
     val execBackendType: ExecBackendType = ExecBackendType.PROOT,
@@ -48,9 +49,11 @@ class SettingsViewModel(
         val geminiKey = securePreferences.getString(SecurePreferences.KEY_GEMINI_API_KEY, "") ?: ""
         val anthropicKey = securePreferences.getString(SecurePreferences.KEY_ANTHROPIC_API_KEY, "") ?: ""
         val openaiKey = securePreferences.getString(SecurePreferences.KEY_OPENAI_API_KEY, "") ?: ""
+        val groqKey = securePreferences.getString(SecurePreferences.KEY_GROQ_API_KEY, "") ?: ""
         val savedModel = securePreferences.getString(SecurePreferences.KEY_SELECTED_MODEL, "gemini-3.5-flash") ?: "gemini-3.5-flash"
         val model = when (savedModel) {
-            "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-3.7-flash", "gpt-4o-mini" -> savedModel
+            "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-3.7-flash", "gpt-4o-mini",
+            "qwen-2.5-coder-32b", "qwen-2.5-72b", "grok-2-latest", "llama-3.3-70b-versatile" -> savedModel
             else -> "gemini-3.5-flash".also {
                 securePreferences.putString(SecurePreferences.KEY_SELECTED_MODEL, it)
             }
@@ -72,6 +75,7 @@ class SettingsViewModel(
                 geminiApiKey = geminiKey,
                 anthropicApiKey = anthropicKey,
                 openaiApiKey = openaiKey,
+                groqApiKey = groqKey,
                 selectedModel = model,
                 autonomyMode = mode,
                 execBackendType = backendType,
@@ -89,6 +93,10 @@ class SettingsViewModel(
 
     fun updateOpenAiApiKey(key: String) {
         _uiState.update { it.copy(openaiApiKey = key, isSavedSuccess = false) }
+    }
+
+    fun updateGroqApiKey(key: String) {
+        _uiState.update { it.copy(groqApiKey = key, isSavedSuccess = false) }
     }
 
     fun updateSelectedModel(model: String) {
@@ -141,6 +149,7 @@ class SettingsViewModel(
         securePreferences.putString(SecurePreferences.KEY_GEMINI_API_KEY, current.geminiApiKey.trim())
         securePreferences.putString(SecurePreferences.KEY_ANTHROPIC_API_KEY, current.anthropicApiKey.trim())
         securePreferences.putString(SecurePreferences.KEY_OPENAI_API_KEY, current.openaiApiKey.trim())
+        securePreferences.putString(SecurePreferences.KEY_GROQ_API_KEY, current.groqApiKey.trim())
         securePreferences.putString(SecurePreferences.KEY_SELECTED_MODEL, current.selectedModel)
         securePreferences.putString(SecurePreferences.KEY_AUTONOMY_MODE, current.autonomyMode.name)
         securePreferences.setExecBackendType(current.execBackendType)

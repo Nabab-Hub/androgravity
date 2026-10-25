@@ -67,7 +67,7 @@ class SecurePreferences(context: Context) : SecureStorage {
 
     fun getRemoteConfig(): dev.pocketagent.core.model.RemoteConfig {
         return dev.pocketagent.core.model.RemoteConfig(
-            host = getString(KEY_REMOTE_HOST, "10.0.2.2") ?: "10.0.2.2",
+            host = getString(KEY_REMOTE_HOST, "127.0.0.1") ?: "127.0.0.1",
             port = getInt(KEY_REMOTE_PORT, 8787),
             token = getString(KEY_REMOTE_TOKEN, "") ?: "",
             useTls = getBoolean(KEY_REMOTE_TLS, false),
@@ -111,6 +111,7 @@ class SecurePreferences(context: Context) : SecureStorage {
         const val KEY_GEMINI_API_KEY = "gemini_api_key"
         const val KEY_ANTHROPIC_API_KEY = "anthropic_api_key"
         const val KEY_OPENAI_API_KEY = "openai_api_key"
+        const val KEY_GROQ_API_KEY = "groq_api_key"
         const val KEY_SELECTED_PROVIDER = "selected_provider"
         const val KEY_SELECTED_MODEL = "selected_model"
         const val KEY_AUTONOMY_MODE = "autonomy_mode"

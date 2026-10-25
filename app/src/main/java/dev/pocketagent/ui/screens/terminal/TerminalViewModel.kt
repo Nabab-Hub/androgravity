@@ -30,6 +30,8 @@ class TerminalViewModel(
 
     val bootstrapStatus: StateFlow<BootstrapStatus> = linuxManager.status
 
+    fun isLinuxInstalled(): Boolean = linuxManager.isInstalled()
+
     private val _tabs = MutableStateFlow<List<TerminalTab>>(emptyList())
     val tabs: StateFlow<List<TerminalTab>> = _tabs.asStateFlow()
 

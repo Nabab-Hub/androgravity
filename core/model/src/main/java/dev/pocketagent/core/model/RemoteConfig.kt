@@ -11,7 +11,7 @@ enum class ExecBackendType {
 
 @Serializable
 data class RemoteConfig(
-    val host: String = "10.0.2.2",
+    val host: String = "127.0.0.1",
     val port: Int = 8787,
     val token: String = "",
     val useTls: Boolean = false,
