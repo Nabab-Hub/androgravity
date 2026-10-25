@@ -53,6 +53,7 @@ fun SettingsScreen(
     val uiState by viewModel.uiState.collectAsState()
     var passwordVisible by remember { mutableStateOf(false) }
     var openaiPasswordVisible by remember { mutableStateOf(false) }
+    var groqPasswordVisible by remember { mutableStateOf(false) }
     var showBatteryGuide by remember { mutableStateOf(false) }
 
     if (showBatteryGuide) {
@@ -138,6 +139,28 @@ fun SettingsScreen(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = uiState.groqApiKey,
+                    onValueChange = { viewModel.updateGroqApiKey(it) },
+                    label = { Text("Groq / xAI Grok API Key(s)") },
+                    placeholder = { Text("Paste Groq (gsk_...) or Grok (xai-...) keys, comma/newline separated for auto-failover") },
+                    leadingIcon = { Icon(Icons.Default.Key, contentDescription = null) },
+                    trailingIcon = {
+                        IconButton(onClick = { groqPasswordVisible = !groqPasswordVisible }) {
+                            Icon(
+                                imageVector = if (groqPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                contentDescription = if (groqPasswordVisible) "Hide key" else "Show key"
+                            )
+                        }
+                    },
+                    visualTransformation = if (groqPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    minLines = 1,
+                    maxLines = 3,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
 
@@ -160,6 +183,10 @@ fun SettingsScreen(
                     "gemini-3.5-flash-lite" to "Gemini 3.5 Flash Lite (Ultra low latency)",
                     "gemini-3.8-flash" to "Gemini 3.8 Flash (Next-gen frontier reasoning)",
                     "gemini-3.7-flash" to "Gemini 3.7 Flash (Hybrid reasoning)",
+                    "qwen-2.5-coder-32b" to "Qwen 2.5 Coder 32B (via Groq - Ultra fast open-source coding)",
+                    "qwen-2.5-72b" to "Qwen 2.5 72B (via Groq - High capability open model)",
+                    "grok-2-latest" to "xAI Grok 2 (via xAI - Advanced frontier model)",
+                    "llama-3.3-70b-versatile" to "Llama 3.3 70B (via Groq - Fast versatile reasoning)",
                     "gpt-4o-mini" to "ChatGPT GPT-4o Mini (Requires paid credits on platform.openai.com)"
                 )
 

@@ -40,6 +40,11 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.window.Dialog
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -73,6 +78,7 @@ fun TerminalScreen(
     val activeIndex by viewModel.activeTabIndex.collectAsState()
 
     var inputCommand by remember { mutableStateOf("") }
+    var showBootstrapDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -80,76 +86,117 @@ fun TerminalScreen(
             .background(Color(0xFF0D1117))
             .imePadding()
     ) {
-        // Bootstrap Setup Card (if not ready and tabs empty)
-        if (bootstrapStatus !is BootstrapStatus.Ready && tabs.isEmpty()) {
-            BootstrapBanner(
-                status = bootstrapStatus,
-                onStartBootstrap = { viewModel.startBootstrap() },
-                onLaunchHostShell = { viewModel.openNewTab("host") }
-            )
-        } else {
-            // Tabs Row
-            Row(
+        // Persistent Banner if Linux Sandbox is not yet installed
+        if (bootstrapStatus !is BootstrapStatus.Ready && !viewModel.isLinuxInstalled()) {
+            Surface(
+                color = Color(0xFF161B22),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFF161B22))
-                    .horizontalScroll(rememberScrollState())
                     .padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically
+                shape = RoundedCornerShape(8.dp),
+                border = BorderStroke(1.dp, Color(0xFF388BFD))
             ) {
-                tabs.forEachIndexed { index, tab ->
-                    val isSelected = index == activeIndex
-                    Row(
-                        modifier = Modifier
-                            .padding(end = 6.dp)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(if (isSelected) Color(0xFF21262D) else Color(0xFF161B22))
-                            .border(
-                                1.dp,
-                                if (isSelected) Color(0xFF388BFD) else Color(0xFF30363D),
-                                RoundedCornerShape(6.dp)
-                            )
-                            .clickable { viewModel.selectTab(index) }
-                            .padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Terminal,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint = if (tab.isRunning) Color(0xFF7EE787) else Color(0xFF8B949E)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = tab.title,
-                            color = if (isSelected) Color(0xFFE6EDF3) else Color(0xFF8B949E),
-                            fontSize = 12.sp,
-                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Close Tab",
-                            modifier = Modifier
-                                .size(14.dp)
-                                .clickable { viewModel.closeTab(tab.id) },
-                            tint = Color(0xFF8B949E)
-                        )
-                    }
-                }
-
-                // Add Tab Button
-                IconButton(
-                    onClick = { viewModel.openNewTab() },
-                    modifier = Modifier.size(28.dp)
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "New Terminal Tab",
-                        tint = Color(0xFF58A6FF)
+                        imageVector = Icons.Default.Download,
+                        contentDescription = null,
+                        tint = Color(0xFF58A6FF),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Linux Sandbox (PRoot) not installed.",
+                        color = Color(0xFFE6EDF3),
+                        fontSize = 11.sp,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(
+                        onClick = { showBootstrapDialog = true },
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                    ) {
+                        Text("Setup Sandbox", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF58A6FF))
+                    }
+                }
+            }
+        }
+
+        // Tabs Row
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFF161B22))
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            tabs.forEachIndexed { index, tab ->
+                val isSelected = index == activeIndex
+                Row(
+                    modifier = Modifier
+                        .padding(end = 6.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(if (isSelected) Color(0xFF21262D) else Color(0xFF161B22))
+                        .border(
+                            1.dp,
+                            if (isSelected) Color(0xFF388BFD) else Color(0xFF30363D),
+                            RoundedCornerShape(6.dp)
+                        )
+                        .clickable { viewModel.selectTab(index) }
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Terminal,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = if (tab.isRunning) Color(0xFF7EE787) else Color(0xFF8B949E)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = tab.title,
+                        color = if (isSelected) Color(0xFFE6EDF3) else Color(0xFF8B949E),
+                        fontSize = 12.sp,
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close Tab",
+                        modifier = Modifier
+                            .size(14.dp)
+                            .clickable { viewModel.closeTab(tab.id) },
+                        tint = Color(0xFF8B949E)
                     )
                 }
             }
+
+            // Add Tab Button
+            IconButton(
+                onClick = { viewModel.openNewTab() },
+                modifier = Modifier.size(28.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "New Terminal Tab",
+                    tint = Color(0xFF58A6FF)
+                )
+            }
+
+            // Linux Sandbox Setup Button
+            IconButton(
+                onClick = { showBootstrapDialog = true },
+                modifier = Modifier.size(28.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Download,
+                    contentDescription = "Linux Sandbox Setup",
+                    tint = if (bootstrapStatus is BootstrapStatus.Ready || viewModel.isLinuxInstalled()) Color(0xFF7EE787) else Color(0xFFFFA657)
+                )
+            }
+        }
 
             // Active Tab Terminal Buffer
             val currentTab = tabs.getOrNull(activeIndex)
@@ -297,8 +344,15 @@ fun TerminalScreen(
                 }
             }
         }
+
+        if (showBootstrapDialog) {
+            BootstrapDialog(
+                status = bootstrapStatus,
+                onStartBootstrap = { viewModel.startBootstrap() },
+                onDismiss = { showBootstrapDialog = false }
+            )
+        }
     }
-}
 
 @Composable
 fun ExtraKeysBar(
@@ -371,47 +425,63 @@ fun ExtraKeysBar(
 }
 
 @Composable
-fun BootstrapBanner(
+fun BootstrapDialog(
     status: BootstrapStatus,
     onStartBootstrap: () -> Unit,
-    onLaunchHostShell: () -> Unit
+    onDismiss: () -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        contentAlignment = Alignment.Center
+    Dialog(
+        onDismissRequest = {
+            if (status !is BootstrapStatus.Downloading && status !is BootstrapStatus.Extracting) {
+                onDismiss()
+            }
+        }
     ) {
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
             colors = CardDefaults.cardColors(containerColor = Color(0xFF161B22)),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(12.dp),
+            border = BorderStroke(1.dp, Color(0xFF30363D))
         ) {
             Column(
                 modifier = Modifier.padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Icon(
-                    imageVector = Icons.Default.Terminal,
-                    contentDescription = null,
-                    modifier = Modifier.size(48.dp),
-                    tint = Color(0xFF58A6FF)
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Terminal,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                            tint = Color(0xFF58A6FF)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Linux Sandbox Setup",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color(0xFFE6EDF3),
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.LightGray)
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "Linux Sandbox Setup",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = Color(0xFFE6EDF3),
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "Install Alpine Linux minirootfs (~3.5 MB) to run isolated Linux shells with proot, nodejs, python3, and git.",
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = "Install Alpine Linux minirootfs (~3.5 MB) to run isolated Linux shells with proot, nodejs, python3, and git directly on your device.",
+                    style = MaterialTheme.typography.bodySmall,
                     color = Color(0xFF8B949E),
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
@@ -427,17 +497,17 @@ fun BootstrapBanner(
                         ) {
                             Icon(Icons.Default.Download, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Install Alpine Linux Rootfs")
+                            Text("Download & Install Rootfs")
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        Button(
-                            onClick = onLaunchHostShell,
+                        OutlinedButton(
+                            onClick = onDismiss,
                             shape = RoundedCornerShape(8.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("Launch Direct Shell Fallback")
+                            Text("Dismiss / Use Direct Shell", color = Color(0xFF8B949E))
                         }
                     }
 
@@ -499,14 +569,23 @@ fun BootstrapBanner(
                         Spacer(modifier = Modifier.height(12.dp))
                         Button(
                             onClick = onStartBootstrap,
-                            shape = RoundedCornerShape(8.dp)
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.fillMaxWidth()
                         ) {
                             Text("Retry Installation")
                         }
                     }
 
                     is BootstrapStatus.Ready -> {
-                        Text("Linux Sandbox is ready!", color = Color(0xFF7EE787))
+                        Text("Linux Sandbox is ready!", color = Color(0xFF7EE787), fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(
+                            onClick = onDismiss,
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Done")
+                        }
                     }
                 }
             }

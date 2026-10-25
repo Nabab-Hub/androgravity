@@ -23,6 +23,9 @@ class PocketAgentApp : Application() {
     lateinit var openAiProvider: dev.pocketagent.core.providers.openai.OpenAiProvider
         private set
 
+    lateinit var groqGrokProvider: dev.pocketagent.core.providers.groq.GroqGrokProvider
+        private set
+
     lateinit var modelProvider: dev.pocketagent.core.providers.ModelProvider
         private set
 
@@ -109,9 +112,20 @@ class PocketAgentApp : Application() {
             }
         )
 
+        groqGrokProvider = dev.pocketagent.core.providers.groq.GroqGrokProvider(
+            apiKeyProvider = {
+                try {
+                    securePreferences.getString(SecurePreferences.KEY_GROQ_API_KEY, "") ?: ""
+                } catch (_: Throwable) {
+                    ""
+                }
+            }
+        )
+
         modelProvider = dev.pocketagent.core.providers.CompositeModelProvider(
             geminiProvider = geminiProvider,
-            openAiProvider = openAiProvider
+            openAiProvider = openAiProvider,
+            groqGrokProvider = groqGrokProvider
         )
 
         linuxManager = dev.pocketagent.core.sandbox.LinuxEnvironmentManager(this)

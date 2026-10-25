@@ -9,6 +9,10 @@ Usage:
     python pocket-api.py --port 8787 --token mysecret --workspace ~/projects
 """
 
+import utils.clients
+import utils.http_session
+import utils.transport
+import utils.session
 import argparse
 import http.server
 import json
