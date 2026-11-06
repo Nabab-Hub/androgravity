@@ -76,8 +76,8 @@ Prerequisites: JDK 21+ and Android SDK 35.
 
 ```bash
 # Clone the repository
-git clone https://github.com/skahi/maza-agent.git
-cd maza-agent
+git clone https://github.com/Nabab-Hub/androgravity.git
+cd androgravity
 
 # Build debug APK
 ./gradlew :app:assembleDebug
