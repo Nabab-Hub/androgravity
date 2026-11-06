@@ -32,6 +32,9 @@ class TerminalViewModel(
 
     fun isLinuxInstalled(): Boolean = linuxManager.isInstalled()
 
+    private val _isTermuxOnline = MutableStateFlow<Boolean?>(null)
+    val isTermuxOnline: StateFlow<Boolean?> = _isTermuxOnline.asStateFlow()
+
     private val _tabs = MutableStateFlow<List<TerminalTab>>(emptyList())
     val tabs: StateFlow<List<TerminalTab>> = _tabs.asStateFlow()
 
@@ -42,6 +45,7 @@ class TerminalViewModel(
     private val listenerJobs = mutableMapOf<String, Job>()
 
     init {
+        checkTermuxBridge()
         openNewTab()
 
         // Sync terminal working directory whenever active project changes
@@ -59,6 +63,17 @@ class TerminalViewModel(
                     }
                 }
             }
+        }
+    }
+
+    fun checkTermuxBridge(onResult: ((Boolean) -> Unit)? = null) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val status = app.remoteExecBackend.ping()
+            _isTermuxOnline.value = status.isOnline
+            if (status.isOnline) {
+                app.securePreferences.setExecBackendType(dev.pocketagent.core.model.ExecBackendType.REMOTE)
+            }
+            onResult?.invoke(status.isOnline)
         }
     }
 
@@ -219,16 +234,14 @@ class TerminalViewModel(
             val trimmed = text.trimEnd('\r', '\n')
             appendOutput(currentTab.id, "\u001b[1;32m$ $trimmed\u001b[0m\r\n")
 
-            if ((trimmed.startsWith("apk") || trimmed.startsWith("pkg") || trimmed.startsWith("apt")) && !app.prootBackend.isProotAvailable() && !isRemote) {
+            if ((trimmed.startsWith("apk") || trimmed.startsWith("pkg") || trimmed.startsWith("apt") || trimmed.startsWith("python") || trimmed.startsWith("node") || trimmed.startsWith("git")) && !app.prootBackend.isProotAvailable() && !isRemote) {
                 appendOutput(
                     currentTab.id,
-                    "\u001b[1;33m[Termux / Package Manager Notice]\u001b[0m\r\n" +
-                    "Android security sandbox prevents direct access to Termux private files (/data/data/com.termux/).\r\n" +
-                    "• To connect Androgravity with your Termux packages (git, node, python, pkg):\r\n" +
+                    "\u001b[1;33m[Termux Bridge Notice]\u001b[0m\r\n" +
+                    "To execute commands directly inside Termux:\r\n" +
                     "  1) In Termux, run:\r\n" +
-                    "     python <(curl -sL https://raw.githubusercontent.com/Nabab-Hub/androgravity/main/tools/pocket-api/pocket-api.py) --port 8787\r\n" +
-                    "  2) In Androgravity > Settings > Sandbox, select 'Termux Bridge / Remote PC' -> Host: 127.0.0.1, Port: 8787.\r\n" +
-                    "  All terminal and agent operations will then execute directly inside your Termux environment.\r\n"
+                    "     termux-wake-lock && pkg install -y python curl && curl -sSL https://raw.githubusercontent.com/Nabab-Hub/androgravity/main/tools/pocket-api/pocket-api.py -o pocket-api.py && python3 pocket-api.py\r\n" +
+                    "  2) Tap the 'Termux' button in the toolbar above to connect.\r\n"
                 )
             }
         }

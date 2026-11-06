@@ -53,6 +53,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import dev.pocketagent.core.model.ExecBackendType
 import dev.pocketagent.ui.viewmodel.SettingsUiState
 import dev.pocketagent.ui.viewmodel.SettingsViewModel
@@ -317,73 +318,52 @@ fun RemoteWorkspaceSection(
 
                             AnimatedVisibility(visible = showTermuxGuide) {
                                 Column(modifier = Modifier.padding(top = 8.dp)) {
+                                    val tokenArg = if (uiState.remoteConfig.token.isNotBlank()) " --token ${uiState.remoteConfig.token.trim()}" else ""
+                                    val oneClickCmd = "termux-wake-lock && pkg install -y python curl && curl -sSL https://raw.githubusercontent.com/Nabab-Hub/androgravity/main/tools/pocket-api/pocket-api.py -o pocket-api.py && python3 pocket-api.py$tokenArg"
+
                                     Text(
-                                        text = "1. Generate an Auth Token in Termux:",
+                                        text = "1. Copy & Run 1-Click Command in Termux:",
                                         style = MaterialTheme.typography.labelMedium,
                                         fontWeight = FontWeight.SemiBold
                                     )
-                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Spacer(modifier = Modifier.height(4.dp))
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp))
-                                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                                            .padding(horizontal = 8.dp, vertical = 6.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = "openssl rand -hex 16",
+                                            text = oneClickCmd,
                                             fontFamily = FontFamily.Monospace,
                                             style = MaterialTheme.typography.bodySmall,
+                                            fontSize = 11.sp,
                                             modifier = Modifier.weight(1f)
                                         )
                                         IconButton(
                                             onClick = {
-                                                clipboard.setText(AnnotatedString("openssl rand -hex 16"))
-                                                Toast.makeText(context, "Command copied", Toast.LENGTH_SHORT).show()
+                                                clipboard.setText(AnnotatedString(oneClickCmd))
+                                                Toast.makeText(context, "1-Click command copied! Paste into Termux.", Toast.LENGTH_SHORT).show()
                                             },
-                                            modifier = Modifier.size(24.dp)
+                                            modifier = Modifier.size(28.dp)
                                         ) {
-                                            Icon(Icons.Default.ContentCopy, contentDescription = "Copy", modifier = Modifier.size(14.dp))
+                                            Icon(Icons.Default.ContentCopy, contentDescription = "Copy command", modifier = Modifier.size(16.dp))
                                         }
                                     }
 
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
-                                        text = "2. Run Bridge in Termux:",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    val startCmd = "curl -sSL https://raw.githubusercontent.com/Nabab-Hub/androgravity/main/tools/pocket-api/pocket-api.py -o pocket-api.py && python3 pocket-api.py --port 8787 --token YOUR_TOKEN"
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(4.dp))
-                                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(
-                                            text = "python3 pocket-api.py --port 8787 --token <token>",
-                                            fontFamily = FontFamily.Monospace,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                        IconButton(
-                                            onClick = {
-                                                clipboard.setText(AnnotatedString(startCmd))
-                                                Toast.makeText(context, "Setup command copied", Toast.LENGTH_SHORT).show()
-                                            },
-                                            modifier = Modifier.size(24.dp)
-                                        ) {
-                                            Icon(Icons.Default.ContentCopy, contentDescription = "Copy command", modifier = Modifier.size(14.dp))
-                                        }
-                                    }
-
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    Text(
-                                        text = "3. In Androgravity, set Host to 127.0.0.1, Port to 8787, paste token, and tap Test Remote Connection.",
+                                        text = "2. Keep Termux running in background (termux-wake-lock prevents Android from sleeping).",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "3. Tap 'Test Remote Daemon Connection' above. Once online, Termux is ready for python, node, git, and build tools!",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.Medium
                                     )
                                 }
                             }
