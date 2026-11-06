@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -73,7 +74,9 @@ import dev.pocketagent.core.sandbox.BootstrapStatus
 fun TerminalScreen(
     viewModel: TerminalViewModel = viewModel()
 ) {
+    val context = LocalContext.current
     val bootstrapStatus by viewModel.bootstrapStatus.collectAsState()
+    val isTermuxOnline by viewModel.isTermuxOnline.collectAsState()
     val tabs by viewModel.tabs.collectAsState()
     val activeIndex by viewModel.activeTabIndex.collectAsState()
 
@@ -195,6 +198,48 @@ fun TerminalScreen(
                     contentDescription = "Linux Sandbox Setup",
                     tint = if (bootstrapStatus is BootstrapStatus.Ready || viewModel.isLinuxInstalled()) Color(0xFF7EE787) else Color(0xFFFFA657)
                 )
+            }
+
+            Spacer(modifier = Modifier.width(6.dp))
+
+            // Termux Bridge Status Chip
+            val isOnline = isTermuxOnline == true
+            Surface(
+                color = if (isOnline) Color(0xFF1B4721) else Color(0xFF21262D),
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.dp, if (isOnline) Color(0xFF3FB950) else Color(0xFF30363D)),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable {
+                        Toast.makeText(context, "Checking Termux Bridge on 127.0.0.1:8787...", Toast.LENGTH_SHORT).show()
+                        viewModel.checkTermuxBridge { online ->
+                            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                                Toast.makeText(
+                                    context,
+                                    if (online) "🟢 Termux Bridge is Online!" else "⚪ Termux Bridge is Offline. Run pocket-api.py in Termux.",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
+                    }
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(7.dp)
+                            .background(if (isOnline) Color(0xFF3FB950) else Color(0xFF8B949E), CircleShape)
+                    )
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text(
+                        text = if (isOnline) "Termux" else "Termux (Offline)",
+                        color = if (isOnline) Color(0xFF7EE787) else Color(0xFF8B949E),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
 
